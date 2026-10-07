@@ -16,7 +16,7 @@ export default defineConfig({
   base: basePath,
   plugins: [
     react(),
-    tailwindcss({ optimize: false }),
+    tailwindcss(),
   ],
   resolve: {
     alias: {

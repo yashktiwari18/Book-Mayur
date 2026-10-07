@@ -126,6 +126,7 @@ function AppRoutes() {
       <Route path="/search"><Protected><SearchPage /></Protected></Route>
       <Route path="/cart"><Protected><CartPage /></Protected></Route>
       <Route path="/orders"><Protected><OrdersPage /></Protected></Route>
+      <Route path="/return"><Protected><ReturnPage /></Protected></Route>
       <Route path="/orders/:orderId"><Protected><OrderDetailPage /></Protected></Route>
       <Route path="/profile"><Protected><ProfilePage /></Protected></Route>
       <Route><NotFound /></Route>
@@ -351,7 +352,7 @@ const navItems = [
   { href: '/shop', label: 'Home', Icon: Home },
   { href: '/search', label: 'Search', Icon: Search },
   { href: '/cart', label: 'Cart', Icon: ShoppingCart },
-  { href: '/orders', label: 'Orders', Icon: ClipboardList },
+  { href: '/return', label: 'Return', Icon: RotateCcw },
   { href: '/profile', label: 'Profile', Icon: UserRound },
 ];
 
@@ -383,7 +384,7 @@ function AppShell({ children, active }: { children: ReactNode; active: string })
   const cartQuery = useGetCart({ query: { queryKey: getGetCartQueryKey() } });
   const count = cartQuery.data?.itemCount ?? 0;
   return <div className="app-shell">
-    <header className="shop-header"><div className="wrap header-inner"><Brand compact /><div className="header-location"><MapPin size={17} /><span><small>DELIVERY DETAILS</small><b>Confirm at checkout</b></span><ChevronDown size={14} /></div><nav className="header-tabs" aria-label="Shop navigation"><Link href="/shop" className={active === '/shop' ? 'tab-active' : ''} data-testid="link-header-home">Home</Link><Link href="/search" className={active === '/search' ? 'tab-active' : ''} data-testid="link-header-search">Search</Link><Link href="/orders" className={active === '/orders' ? 'tab-active' : ''} data-testid="link-header-orders">Orders</Link></nav><div className="header-search"><Search size={17} /><Link href="/search">Search books, authors, subjects...</Link><kbd>âŒ˜ K</kbd></div><Link href="/cart" className="header-cart" aria-label="Open cart" data-testid="link-header-cart"><ShoppingBag size={20} /><span>{count}</span></Link><Link href="/profile" className="header-avatar" aria-label="Profile">{user?.firstName?.slice(0, 1) || 'P'}</Link></div></header>
+    <header className="shop-header"><div className="wrap header-inner"><Brand compact /><div className="header-location"><MapPin size={17} /><span><small>DELIVERY DETAILS</small><b>Confirm at checkout</b></span><ChevronDown size={14} /></div><nav className="header-tabs" aria-label="Shop navigation"><Link href="/shop" className={active === '/shop' ? 'tab-active' : ''} data-testid="link-header-home">Home</Link><Link href="/search" className={active === '/search' ? 'tab-active' : ''} data-testid="link-header-search">Search</Link><Link href="/return" className={active === '/return' ? 'tab-active' : ''} data-testid="link-header-return">Return</Link></nav><div className="header-search"><Search size={17} /><Link href="/search">Search books, authors, subjects...</Link><kbd>⌘ K</kbd></div><Link href="/cart" className="header-cart" aria-label="Open cart" data-testid="link-header-cart"><ShoppingBag size={20} /><span>{count}</span></Link><Link href="/profile" className="header-avatar" aria-label="Profile">{user?.firstName?.slice(0, 1) || 'P'}</Link></div></header>
     <main className="wrap page-content">{children}</main>
     <MobileBottomNav active={active} count={count} />
     <footer className="desktop-footer wrap"><span>Book Bazaar Â· The school bookshop</span><span>Books chosen for a better school day.</span></footer>
@@ -523,6 +524,219 @@ function CartPage() {
   return <AppShell active="/cart"><PageHeading kicker="YOUR BASKET" title="Books in the making." text={`${cart.itemCount} ${cart.itemCount === 1 ? 'book' : 'books'} on your list.`} /><div className="cart-layout"><div className="cart-lines">{(update.isError || remove.isError) && <div className="inline-error" role="alert">Your basket could not be updated. Please try again.</div>}{cart.items.map(({ book, quantity, lineTotal }) => <article className="cart-line" key={book.id}><div className="cart-book-cover"><img src={book.imageUrl || '/books-editorial.jpg'} alt={book.title} /></div><div className="cart-book-details"><div className="eyebrow">CLASS {book.classLevel} Â· {book.subject}</div><h3>{book.title}</h3><p>{book.author}</p><div className="quantity-control"><button aria-label="Decrease quantity" onClick={() => quantity > 1 ? updateQty(book.id, quantity - 1) : removeItem(book.id)} data-testid={`button-quantity-minus-${book.id}`}><Minus size={14} /></button><span>{quantity}</span><button aria-label="Increase quantity" onClick={() => updateQty(book.id, Math.min(20, quantity + 1))} data-testid={`button-quantity-plus-${book.id}`}><Plus size={14} /></button></div></div><div className="cart-line-end"><b>{money(lineTotal)}</b><button className="remove-link" onClick={() => removeItem(book.id)} data-testid={`button-remove-${book.id}`}>Remove</button></div></article>)}
       <Link href="/shop" className="continue-link"><ArrowLeft size={15} /> Continue shopping</Link></div><aside className="summary-card"><span className="eyebrow">ORDER SUMMARY</span><div className="summary-row"><span>Books ({cart.itemCount})</span><b>{money(cart.subtotal)}</b></div><div className="summary-row"><span>Delivery</span><b className="delivery-included">On us</b></div><div className="summary-total"><span>Total</span><b>{money(cart.subtotal)}</b></div><button className="button button-primary checkout-button" onClick={() => setCheckout(!checkout)} data-testid="button-checkout">{checkout ? 'Checkout details' : 'Proceed to checkout'} <ArrowRight size={16} /></button><div className="payment-note"><ShieldCheck size={16} /> Secure checkout Â· Cash on delivery</div>
       {checkout && <form className="checkout-form" onSubmit={submitCheckout}><h3>Where should we send them?</h3>{(['customerName','phone','addressLine','city','state','postalCode'] as const).map((name) => <label key={name}>{({ customerName: 'Full name', phone: 'Phone number', addressLine: 'Street address', city: 'City', state: 'State', postalCode: 'Postal code' })[name]}<input required minLength={name === 'customerName' || name === 'city' || name === 'state' ? 2 : name === 'addressLine' ? 5 : name === 'phone' ? 10 : 5} maxLength={name === 'phone' ? 16 : name === 'postalCode' ? 10 : undefined} type={name === 'phone' || name === 'postalCode' ? 'tel' : 'text'} value={form[name]} onChange={(e) => setForm({ ...form, [name]: e.target.value })} data-testid={`input-${name}`} /></label>)}{createOrder.isError && <p className="form-error">We couldnâ€™t place your order. Check your details and try again.</p>}<button className="button button-primary checkout-button" disabled={createOrder.isPending} type="submit">{createOrder.isPending ? 'Placing your orderâ€¦' : `Place order Â· ${money(cart.subtotal)}`}</button></form>}</aside></div></AppShell>;
+}
+
+function ReturnPage() {
+  const orders = useListOrders({ query: { queryKey: getListOrdersQueryKey() } });
+  const [returnCart, setReturnCart] = useState<Record<string, number>>({});
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [reason, setReason] = useState('');
+  const [notes, setNotes] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const orderedItems = useMemo(() => {
+    if (!orders.data) return [];
+    const map = new Map<string, { bookId: string; title: string; imageUrl: string; unitPrice: number; lineTotal: number; quantity: number; orderId: string }>();
+    orders.data.forEach((order) => {
+      order.items.forEach((item) => {
+        const existing = map.get(item.bookId);
+        if (existing) {
+          existing.quantity += item.quantity;
+          existing.lineTotal += item.lineTotal;
+        } else {
+          map.set(item.bookId, { ...item, orderId: order.id });
+        }
+      });
+    });
+    return Array.from(map.values());
+  }, [orders.data]);
+
+  const toggleAddItem = (bookId: string) => {
+    setReturnCart((prev) => {
+      const current = prev[bookId] || 0;
+      if (current === 0) return { ...prev, [bookId]: 1 };
+      return prev;
+    });
+  };
+
+  const updateReturnQty = (bookId: string, delta: number, maxQty: number) => {
+    setReturnCart((prev) => {
+      const current = prev[bookId] || 0;
+      const next = current + delta;
+      if (next <= 0) {
+        const copy = { ...prev };
+        delete copy[bookId];
+        return copy;
+      }
+      return { ...prev, [bookId]: Math.min(next, maxQty) };
+    });
+  };
+
+  const selectedCount = Object.values(returnCart).reduce((sum, qty) => sum + qty, 0);
+  const totalRefund = orderedItems.reduce((sum, item) => {
+    const qty = returnCart[item.bookId] || 0;
+    return sum + qty * item.unitPrice;
+  }, 0);
+
+  const handleProceedToReturn = () => {
+    if (selectedCount > 0) {
+      setShowReasonModal(true);
+    }
+  };
+
+  const handleSubmitReturn = (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitted(true);
+    setShowReasonModal(false);
+  };
+
+  if (orders.isLoading) return <AppShell active="/return"><Busy label="Loading your ordered items" /></AppShell>;
+  if (orders.isError) return <AppShell active="/return"><ErrorState retry={() => { void orders.refetch(); }} /></AppShell>;
+
+  if (submitted) {
+    return (
+      <AppShell active="/return">
+        <div className="order-success">
+          <span className="success-check"><Check size={27} /></span>
+          <span className="eyebrow">RETURN REQUEST CONFIRMED</span>
+          <h1>Return requested.<br /><em>We'll pick it up soon.</em></h1>
+          <p>We've registered a return request for {selectedCount} {selectedCount === 1 ? 'item' : 'items'}. A total refund of <b>{money(totalRefund)}</b> will be credited after pickup.</p>
+          <div className="success-order">RETURN ID <b>#RET-{Math.floor(100000 + Math.random() * 900000)}</b></div>
+          <button className="button button-primary" onClick={() => { setSubmitted(false); setReturnCart({}); }}>Return More Items</button>
+          <Link className="text-link" href="/shop">Back to Shop</Link>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!orderedItems.length) {
+    return (
+      <AppShell active="/return">
+        <PageHeading kicker="EASY RETURNS" title="Return items." text="Items from your orders will appear here for easy return." />
+        <EmptyState title="No orders to return yet." text="Once you place an order, you can add delivered books here for return." action="Explore the books" to="/shop" />
+      </AppShell>
+    );
+  }
+
+  return (
+    <AppShell active="/return">
+      <PageHeading kicker="EASY 7-DAY RETURNS" title="Select items to return." text="Add items from your past orders to create a return request." />
+      
+      <div className="return-page-layout">
+        <div className="return-items-grid">
+          {orderedItems.map((item) => {
+            const qty = returnCart[item.bookId] || 0;
+            const isAdded = qty > 0;
+            return (
+              <article key={item.bookId} className={`return-item-card ${isAdded ? 'selected-return-card' : ''}`}>
+                <div className="return-item-art">
+                  <img src={item.imageUrl || '/books-editorial.jpg'} alt={item.title} />
+                </div>
+                <div className="return-item-info">
+                  <span className="eyebrow">ORDERED ITEM</span>
+                  <h3>{item.title}</h3>
+                  <p>{money(item.unitPrice)} each &middot; Purchased: {item.quantity}</p>
+                  <div className="return-item-buy">
+                    <b>{money(item.unitPrice * (qty || 1))}</b>
+                    {!isAdded ? (
+                      <button
+                        className="add-button return-add-btn"
+                        onClick={() => toggleAddItem(item.bookId)}
+                        aria-label={`Add ${item.title} to return`}
+                      >
+                        <Plus size={18} />
+                      </button>
+                    ) : (
+                      <div className="quantity-control return-qty-control">
+                        <button onClick={() => updateReturnQty(item.bookId, -1, item.quantity)}><Minus size={14} /></button>
+                        <span>{qty}</span>
+                        <button onClick={() => updateReturnQty(item.bookId, 1, item.quantity)} disabled={qty >= item.quantity}><Plus size={14} /></button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <aside className="summary-card return-summary-card">
+          <span className="eyebrow">RETURN SUMMARY</span>
+          <div className="summary-row"><span>Items to return</span><b>{selectedCount}</b></div>
+          <div className="summary-row"><span>Pickup charge</span><b className="delivery-included">Free</b></div>
+          <div className="summary-total"><span>Estimated refund</span><b>{money(totalRefund)}</b></div>
+          <button
+            className="button button-primary checkout-button"
+            disabled={selectedCount === 0}
+            onClick={handleProceedToReturn}
+          >
+            Proceed to return <ArrowRight size={16} />
+          </button>
+          <div className="payment-note"><ShieldCheck size={16} /> 7-day doorstep pickup</div>
+        </aside>
+      </div>
+
+      {showReasonModal && (
+        <div className="return-modal-backdrop" onClick={() => setShowReasonModal(false)}>
+          <div className="return-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="return-modal-close" onClick={() => setShowReasonModal(false)} aria-label="Close"><X size={18} /></button>
+            <div className="return-modal-header">
+              <span className="return-modal-icon"><RotateCcw size={20} /></span>
+              <div>
+                <span className="eyebrow">RETURN REQUEST</span>
+                <h3>Confirm return ({selectedCount} {selectedCount === 1 ? 'item' : 'items'})</h3>
+              </div>
+            </div>
+
+            <form className="return-form" onSubmit={handleSubmitReturn}>
+              <label className="return-form-label">
+                Why are you returning these items?
+                <div className="return-reason-grid">
+                  {RETURN_REASONS.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={`return-reason-chip ${reason === r ? 'return-reason-selected' : ''}`}
+                      onClick={() => setReason(r)}
+                    >
+                      {reason === r && <Check size={12} />}
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </label>
+
+              <label className="return-form-label">
+                <span className="return-notes-label"><MessageSquare size={13} /> Additional details (optional)</span>
+                <textarea
+                  className="return-notes"
+                  placeholder="Tell us more about the issue…"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                />
+              </label>
+
+              <div className="return-form-footer">
+                <div className="return-refund-note">
+                  <ShieldCheck size={15} />
+                  <span>Refund of <b>{money(totalRefund)}</b> will be processed after pickup.</span>
+                </div>
+                <button
+                  type="submit"
+                  className="button button-primary return-submit-btn"
+                  disabled={!reason}
+                >
+                  Confirm Return Request <ArrowRight size={15} />
+                </button>
+                <button type="button" className="return-cancel-link" onClick={() => setShowReasonModal(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </AppShell>
+  );
 }
 
 function OrdersPage() {
@@ -665,7 +879,7 @@ function OrderDetailPage() {
   if (orderQuery.isError || !order) return <AppShell active="/orders"><ErrorState retry={() => { void orderQuery.refetch(); }} /></AppShell>;
   const steps = ['placed', 'processing', 'shipped', 'delivered'];
   const isDelivered = order.status === 'delivered';
-  const isShippedOrDelivered = order.status === 'shipped' || order.status === 'delivered';
+  const isShippedOrDelivered = (order.status as string) === 'shipped' || order.status === 'delivered';
 
   return <AppShell active="/orders">
     <Link href="/orders" className="back-link"><ArrowLeft size={15} /> All orders</Link>
