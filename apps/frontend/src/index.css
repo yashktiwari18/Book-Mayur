@@ -1446,6 +1446,57 @@ img { display: block; max-width: 100%; }
   }
 }
 
+/* Bundle Quantity Picker Styles */
+.bundle-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 8px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2ded4;
+}
+.bundle-qty-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #55665c;
+}
+.bundle-qty-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f4f0e6;
+  border-radius: 8px;
+  padding: 3px 6px;
+}
+.bundle-qty-picker button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 0;
+  background: #ffffff;
+  color: #284336;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: all 0.15s ease;
+}
+.bundle-qty-picker button:hover:not(:disabled) {
+  background: #285b45;
+  color: #ffffff;
+}
+.bundle-qty-picker button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.bundle-qty-picker span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #285b45;
+  min-width: 20px;
+  text-align: center;
+}
+
 
 
 

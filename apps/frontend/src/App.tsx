@@ -48,7 +48,7 @@ function stripBase(path: string) {
 type Lang = 'en' | 'hi';
 const LanguageContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({
   lang: 'en',
-  setLang: () => {},
+  setLang: () => { },
 });
 
 function LanguageProvider({ children }: { children: ReactNode }) {
@@ -64,7 +64,7 @@ function LanguageProvider({ children }: { children: ReactNode }) {
     setLangState(l);
     try {
       localStorage.setItem('app_lang', l);
-    } catch {}
+    } catch { }
   };
 
   return <LanguageContext.Provider value={{ lang, setLang }}>{children}</LanguageContext.Provider>;
@@ -106,7 +106,7 @@ function setDemoSession(loggedIn: boolean) {
     } else {
       localStorage.removeItem('demo_logged_in');
     }
-  } catch {}
+  } catch { }
   window.dispatchEvent(new Event('demo-auth-change'));
 }
 
@@ -132,10 +132,10 @@ function useDemoUser() {
     isSignedIn,
     user: isSignedIn
       ? {
-          firstName: 'Book Bazaar',
-          fullName: 'Demo Reader',
-          primaryEmailAddress: { emailAddress: 'reader@bookbazaar.in' },
-        }
+        firstName: 'Book Bazaar',
+        fullName: 'Demo Reader',
+        primaryEmailAddress: { emailAddress: 'reader@bookbazaar.in' },
+      }
       : null,
   };
 }
@@ -260,7 +260,7 @@ function DemoSignInForm() {
         <LanguageToggle />
       </div>
       <p>{lang === 'hi' ? 'अपनी स्कूल किताबों और ऑर्डर देखने के लिए विवरण दर्ज करें।' : 'Enter your details to access your school books & orders.'}</p>
-      
+
       <label className="demo-auth-label">
         {lang === 'hi' ? 'ईमेल पता' : 'Email address'}
         <input
@@ -290,7 +290,7 @@ function DemoSignInForm() {
       </button>
       <div className="demo-auth-footer">
         <small style={{ color: '#718076' }}>
-          {lang === 'hi' ? 'आपके स्कूल एडमिन द्वारा प्रदान किए गए क्रेडेंशियल' : 'Credentials provided by your school admin'}
+          {lang === 'hi' ? 'आपके सप्लायर द्वारा प्रदान किए गए क्रेडेंशियल' : 'Credentials provided by your supplier'}
         </small>
       </div>
     </form>
@@ -589,10 +589,10 @@ function ShopPage() {
   const addBook = (book: Book) => addMutation.mutate({ data: { bookId: book.id, quantity: 1 } }, {
     onSuccess: () => { setAdded(book.id); void cache.invalidateQueries({ queryKey: getGetCartQueryKey() }); window.setTimeout(() => setAdded(null), 1300); },
   });
-  const addBundle = async (bundleKey: string, bundleBooks: Book[]) => {
+  const addBundle = async (bundleKey: string, bundleBooks: Book[], qty: number = 1) => {
     setAddingBundle(bundleKey);
     try {
-      for (const book of bundleBooks) await addMutation.mutateAsync({ data: { bookId: book.id, quantity: 1 } });
+      for (const book of bundleBooks) await addMutation.mutateAsync({ data: { bookId: book.id, quantity: qty } });
       void cache.invalidateQueries({ queryKey: getGetCartQueryKey() });
     } catch {
       // The shared mutation error state below explains any partial failure.
@@ -635,7 +635,18 @@ function PromotionCard({ promo, index }: { promo: Promotion; index: number }) {
   </Link>;
 }
 
-function SubjectBundles({ books, addBundle, addingBundle }: { books: Book[]; addBundle: (key: string, books: Book[]) => void; addingBundle: string | null }) {
+function SubjectBundles({
+  books,
+  addBundle,
+  addingBundle,
+}: {
+  books: Book[];
+  addBundle: (key: string, books: Book[], quantity: number) => void;
+  addingBundle: string | null;
+}) {
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const { lang } = useLanguage();
+
   const bundles = useMemo(() => {
     const grouped = new Map<string, Book[]>();
     books.forEach((book) => {
@@ -644,11 +655,76 @@ function SubjectBundles({ books, addBundle, addingBundle }: { books: Book[]; add
     });
     return [...grouped.entries()].filter(([, group]) => group.length > 1).slice(0, 3);
   }, [books]);
+
   if (!bundles.length) return null;
-  return <section className="bundles-section"><div className="section-head"><div><span className="eyebrow">A FEW GOOD BOOKS, TOGETHER</span><h2>Build a subject bundle</h2></div><span className="bundle-caption">Add the set in one go.</span></div><div className="bundle-row">{bundles.map(([key, items]) => {
-    const total = items.reduce((sum, book) => sum + book.price, 0);
-    return <article className="bundle-card" key={key}><div className="bundle-head"><span className="bundle-icon"><BookMarked size={18} /></span><span className="bundle-grade">CLASS {items[0].classLevel}</span></div><h3>{items[0].subject}<br /><em>starter bundle</em></h3><div className="bundle-books">{items.slice(0, 3).map((book) => <span key={book.id}>{book.title}</span>)}</div><div className="bundle-buy"><span><b>{money(total)}</b><small>{items.length} titles</small></span><button onClick={() => addBundle(key, items)} disabled={addingBundle === key} data-testid={`button-add-bundle-${key.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>{addingBundle === key ? <LoaderCircle size={16} className="spin" /> : <>Add bundle <Plus size={15} /></>}</button></div></article>;
-  })}</div></section>;
+
+  return (
+    <section className="bundles-section">
+      <div className="section-head">
+        <div>
+          <span className="eyebrow">{lang === 'hi' ? 'विशेष बंडल ऑफर' : 'A FEW GOOD BOOKS, TOGETHER'}</span>
+          <h2>{lang === 'hi' ? 'विषय बंडल चुनें' : 'Build a subject bundle'}</h2>
+        </div>
+        <span className="bundle-caption">{lang === 'hi' ? 'एक साथ पूरा सेट जोड़ें।' : 'Add the set in one go.'}</span>
+      </div>
+      <div className="bundle-row">
+        {bundles.map(([key, items]) => {
+          const qty = quantities[key] || 1;
+          const unitTotal = items.reduce((sum, book) => sum + book.price, 0);
+          const total = unitTotal * qty;
+
+          const updateQty = (delta: number) => {
+            setQuantities((prev) => ({
+              ...prev,
+              [key]: Math.max(1, (prev[key] || 1) + delta),
+            }));
+          };
+
+          return (
+            <article className="bundle-card" key={key}>
+              <div className="bundle-head">
+                <span className="bundle-icon"><BookMarked size={18} /></span>
+                <span className="bundle-grade">CLASS {items[0].classLevel}</span>
+              </div>
+              <h3>{items[0].subject}<br /><em>starter bundle</em></h3>
+              <div className="bundle-books">
+                {items.slice(0, 3).map((book) => <span key={book.id}>{book.title}</span>)}
+              </div>
+              <div className="bundle-qty-row">
+                <span className="bundle-qty-label">{lang === 'hi' ? 'मात्रा:' : 'Qty:'}</span>
+                <div className="quantity-control bundle-qty-picker">
+                  <button type="button" onClick={() => updateQty(-1)} disabled={qty <= 1} aria-label="Decrease bundle quantity">
+                    <Minus size={13} />
+                  </button>
+                  <span>{qty}</span>
+                  <button type="button" onClick={() => updateQty(1)} aria-label="Increase bundle quantity">
+                    <Plus size={13} />
+                  </button>
+                </div>
+              </div>
+              <div className="bundle-buy">
+                <div>
+                  <b>{money(total)}</b>
+                  <small>{items.length} titles {qty > 1 ? `(${qty} sets)` : ''}</small>
+                </div>
+                <button
+                  onClick={() => addBundle(key, items, qty)}
+                  disabled={addingBundle === key}
+                  data-testid={`button-add-bundle-${key.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                >
+                  {addingBundle === key ? (
+                    <LoaderCircle size={16} className="spin" />
+                  ) : (
+                    <>Add bundle <Plus size={15} /></>
+                  )}
+                </button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 function BookCard({ book, add, adding, added }: { book: Book; add: () => void; adding?: boolean; added?: boolean }) {
@@ -701,8 +777,8 @@ function CartPage() {
   if (placedOrder) return <AppShell active="/cart"><div className="order-success"><span className="success-check"><Check size={27} /></span><span className="eyebrow">ORDER CONFIRMED</span><h1>Thatâ€™s a wrap.<br /><em>See you at the door.</em></h1><p>Your books are on their way. Weâ€™ll collect payment when they arrive.</p><div className="success-order">ORDER <b>#{placedOrder.slice(-8).toUpperCase()}</b></div><Link className="button button-primary" href={`/orders/${placedOrder}`}>Track your order <ArrowRight size={16} /></Link><Link className="text-link" href="/shop">Keep browsing</Link></div></AppShell>;
   if (!cart?.items?.length) return <AppShell active="/cart"><PageHeading kicker="YOUR BASKET" title="A little room for books." text="The good stuff you add will appear here." /><EmptyState title="Your basket is waiting." text="Start with a class or subject and build your school list." action="Browse the shelves" /></AppShell>;
   return <AppShell active="/cart"><PageHeading kicker="YOUR BASKET" title="Books in the making." text={`${cart.itemCount} ${cart.itemCount === 1 ? 'book' : 'books'} on your list.`} /><div className="cart-layout"><div className="cart-lines">{(update.isError || remove.isError) && <div className="inline-error" role="alert">Your basket could not be updated. Please try again.</div>}{cart.items.map(({ book, quantity, lineTotal }) => <article className="cart-line" key={book.id}><div className="cart-book-cover"><img src={book.imageUrl || '/books-editorial.jpg'} alt={book.title} /></div><div className="cart-book-details"><div className="eyebrow">CLASS {book.classLevel} Â· {book.subject}</div><h3>{book.title}</h3><p>{book.author}</p><div className="quantity-control"><button aria-label="Decrease quantity" onClick={() => quantity > 1 ? updateQty(book.id, quantity - 1) : removeItem(book.id)} data-testid={`button-quantity-minus-${book.id}`}><Minus size={14} /></button><span>{quantity}</span><button aria-label="Increase quantity" onClick={() => updateQty(book.id, Math.min(20, quantity + 1))} data-testid={`button-quantity-plus-${book.id}`}><Plus size={14} /></button></div></div><div className="cart-line-end"><b>{money(lineTotal)}</b><button className="remove-link" onClick={() => removeItem(book.id)} data-testid={`button-remove-${book.id}`}>Remove</button></div></article>)}
-      <Link href="/shop" className="continue-link"><ArrowLeft size={15} /> Continue shopping</Link></div><aside className="summary-card"><span className="eyebrow">ORDER SUMMARY</span><div className="summary-row"><span>Books ({cart.itemCount})</span><b>{money(cart.subtotal)}</b></div><div className="summary-row"><span>Delivery</span><b className="delivery-included">On us</b></div><div className="summary-total"><span>Total</span><b>{money(cart.subtotal)}</b></div><button className="button button-primary checkout-button" onClick={() => setCheckout(!checkout)} data-testid="button-checkout">{checkout ? 'Checkout details' : 'Proceed to checkout'} <ArrowRight size={16} /></button><div className="payment-note"><ShieldCheck size={16} /> Secure checkout Â· Cash on delivery</div>
-      {checkout && <form className="checkout-form" onSubmit={submitCheckout}><h3>Where should we send them?</h3>{(['customerName','phone','addressLine','city','state','postalCode'] as const).map((name) => <label key={name}>{({ customerName: 'Full name', phone: 'Phone number', addressLine: 'Street address', city: 'City', state: 'State', postalCode: 'Postal code' })[name]}<input required minLength={name === 'customerName' || name === 'city' || name === 'state' ? 2 : name === 'addressLine' ? 5 : name === 'phone' ? 10 : 5} maxLength={name === 'phone' ? 16 : name === 'postalCode' ? 10 : undefined} type={name === 'phone' || name === 'postalCode' ? 'tel' : 'text'} value={form[name]} onChange={(e) => setForm({ ...form, [name]: e.target.value })} data-testid={`input-${name}`} /></label>)}{createOrder.isError && <p className="form-error">We couldnâ€™t place your order. Check your details and try again.</p>}<button className="button button-primary checkout-button" disabled={createOrder.isPending} type="submit">{createOrder.isPending ? 'Placing your orderâ€¦' : `Place order Â· ${money(cart.subtotal)}`}</button></form>}</aside></div></AppShell>;
+    <Link href="/shop" className="continue-link"><ArrowLeft size={15} /> Continue shopping</Link></div><aside className="summary-card"><span className="eyebrow">ORDER SUMMARY</span><div className="summary-row"><span>Books ({cart.itemCount})</span><b>{money(cart.subtotal)}</b></div><div className="summary-row"><span>Delivery</span><b className="delivery-included">On us</b></div><div className="summary-total"><span>Total</span><b>{money(cart.subtotal)}</b></div><button className="button button-primary checkout-button" onClick={() => setCheckout(!checkout)} data-testid="button-checkout">{checkout ? 'Checkout details' : 'Proceed to checkout'} <ArrowRight size={16} /></button><div className="payment-note"><ShieldCheck size={16} /> Secure checkout Â· Cash on delivery</div>
+      {checkout && <form className="checkout-form" onSubmit={submitCheckout}><h3>Where should we send them?</h3>{(['customerName', 'phone', 'addressLine', 'city', 'state', 'postalCode'] as const).map((name) => <label key={name}>{({ customerName: 'Full name', phone: 'Phone number', addressLine: 'Street address', city: 'City', state: 'State', postalCode: 'Postal code' })[name]}<input required minLength={name === 'customerName' || name === 'city' || name === 'state' ? 2 : name === 'addressLine' ? 5 : name === 'phone' ? 10 : 5} maxLength={name === 'phone' ? 16 : name === 'postalCode' ? 10 : undefined} type={name === 'phone' || name === 'postalCode' ? 'tel' : 'text'} value={form[name]} onChange={(e) => setForm({ ...form, [name]: e.target.value })} data-testid={`input-${name}`} /></label>)}{createOrder.isError && <p className="form-error">We couldnâ€™t place your order. Check your details and try again.</p>}<button className="button button-primary checkout-button" disabled={createOrder.isPending} type="submit">{createOrder.isPending ? 'Placing your orderâ€¦' : `Place order Â· ${money(cart.subtotal)}`}</button></form>}</aside></div></AppShell>;
 }
 
 function ReturnPage() {
@@ -800,7 +876,7 @@ function ReturnPage() {
   return (
     <AppShell active="/return">
       <PageHeading kicker="EASY 7-DAY RETURNS" title="Select items to return." text="Add items from your past orders to create a return request." />
-      
+
       <div className="return-page-layout">
         <div className="return-items-grid">
           {orderedItems.map((item) => {
@@ -1222,7 +1298,7 @@ function OrderDetailPage() {
   const orderId = params.orderId || '';
   const orderQuery = useGetOrder(orderId, { query: { enabled: !!orderId, queryKey: getGetOrderQueryKey(orderId) } });
   const { lang } = useLanguage();
-  
+
   // For testing the UI: force the status to be 'delivered' on whatever order is loaded
   const order = orderQuery.data ? { ...orderQuery.data, status: 'delivered' as const } : undefined;
 
@@ -1339,7 +1415,7 @@ function ProfilePage() {
     }
     setLocation('/sign-in');
   };
-  return <AppShell active="/profile"><PageHeading kicker="YOUR BOOK BAZAAR" title="A little about you." text="Your account, your orders, your school-year essentials." /><div className="profile-layout"><section className="profile-card"><div className="profile-avatar">{isLoaded ? (user?.firstName?.slice(0,1) || 'B') : 'â€¦'}</div><div><span className="eyebrow">SIGNED IN AS</span><h2>{name}</h2><p>{user?.primaryEmailAddress?.emailAddress || ''}</p></div><span className="verified-mark"><ShieldCheck size={16} /> Verified account</span></section><section className="profile-quick"><Link href="/orders" className="profile-action"><span className="profile-action-icon"><ClipboardList size={19} /></span><span><b>Your orders</b><small>{orders.data?.length || 0} orders placed</small></span><ChevronRight size={17} /></Link><Link href="/cart" className="profile-action"><span className="profile-action-icon"><ShoppingBag size={19} /></span><span><b>Your basket</b><small>Pick up where you left off</small></span><ChevronRight size={17} /></Link><button className="profile-action logout-action" onClick={handleSignOut} data-testid="button-sign-out"><span className="profile-action-icon"><LogOut size={19} /></span><span><b>Sign out</b><small>See you again soon</small></span><ChevronRight size={17} /></button></section><div className="profile-help"><CircleHelp size={18} /><span><b>Need a hand?</b><small>Weâ€™re happy to help with your order or book list.</small></span><a href="mailto:hello@bookbazaar.in" className="text-link">Get in touch <ArrowUpRight size={14} /></a></div></div></AppShell>;
+  return <AppShell active="/profile"><PageHeading kicker="YOUR BOOK BAZAAR" title="A little about you." text="Your account, your orders, your school-year essentials." /><div className="profile-layout"><section className="profile-card"><div className="profile-avatar">{isLoaded ? (user?.firstName?.slice(0, 1) || 'B') : 'â€¦'}</div><div><span className="eyebrow">SIGNED IN AS</span><h2>{name}</h2><p>{user?.primaryEmailAddress?.emailAddress || ''}</p></div><span className="verified-mark"><ShieldCheck size={16} /> Verified account</span></section><section className="profile-quick"><Link href="/orders" className="profile-action"><span className="profile-action-icon"><ClipboardList size={19} /></span><span><b>Your orders</b><small>{orders.data?.length || 0} orders placed</small></span><ChevronRight size={17} /></Link><Link href="/cart" className="profile-action"><span className="profile-action-icon"><ShoppingBag size={19} /></span><span><b>Your basket</b><small>Pick up where you left off</small></span><ChevronRight size={17} /></Link><button className="profile-action logout-action" onClick={handleSignOut} data-testid="button-sign-out"><span className="profile-action-icon"><LogOut size={19} /></span><span><b>Sign out</b><small>See you again soon</small></span><ChevronRight size={17} /></button></section><div className="profile-help"><CircleHelp size={18} /><span><b>Need a hand?</b><small>Weâ€™re happy to help with your order or book list.</small></span><a href="mailto:hello@bookbazaar.in" className="text-link">Get in touch <ArrowUpRight size={14} /></a></div></div></AppShell>;
 }
 
 function NotFound() {
