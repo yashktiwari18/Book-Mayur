@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -8,7 +8,7 @@ import {
   ChevronRight, CircleHelp, GraduationCap, Heart, Home, LogOut, MapPin,
   Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingBag, ShoppingCart,
   SlidersHorizontal, Sparkles, Star, UserRound, X, ClipboardList, AlertCircle,
-  LoaderCircle, BookMarked, RotateCcw, MessageSquare,
+  LoaderCircle, BookMarked, RotateCcw, MessageSquare, Printer,
 } from 'lucide-react';
 import { Link, Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import {
@@ -45,21 +45,99 @@ const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 function stripBase(path: string) {
   return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
 }
+type Lang = 'en' | 'hi';
+const LanguageContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({
+  lang: 'en',
+  setLang: () => {},
+});
+
+function LanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>(() => {
+    try {
+      return (localStorage.getItem('app_lang') as Lang) || 'en';
+    } catch {
+      return 'en';
+    }
+  });
+
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    try {
+      localStorage.setItem('app_lang', l);
+    } catch {}
+  };
+
+  return <LanguageContext.Provider value={{ lang, setLang }}>{children}</LanguageContext.Provider>;
+}
+
+function useLanguage() {
+  return useContext(LanguageContext);
+}
+
+function LanguageToggle() {
+  const { lang, setLang } = useLanguage();
+  return (
+    <button
+      type="button"
+      className="lang-toggle-btn"
+      onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
+      data-testid="button-language-toggle"
+      title="Switch Language / भाषा बदलें"
+    >
+      <span className={lang === 'en' ? 'active-lang' : ''}>EN</span>
+      <span className="lang-divider">/</span>
+      <span className={lang === 'hi' ? 'active-lang' : ''}>हिंदी</span>
+    </button>
+  );
+}
+
+function getDemoSession() {
+  try {
+    return localStorage.getItem('demo_logged_in') === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function setDemoSession(loggedIn: boolean) {
+  try {
+    if (loggedIn) {
+      localStorage.setItem('demo_logged_in', 'true');
+    } else {
+      localStorage.removeItem('demo_logged_in');
+    }
+  } catch {}
+  window.dispatchEvent(new Event('demo-auth-change'));
+}
 
 // Standalone (no-Clerk) versions of auth hooks
+function useDemoAuth() {
+  const [isSignedIn, setIsSignedIn] = useState(() => getDemoSession());
+  useEffect(() => {
+    const handleStorage = () => setIsSignedIn(getDemoSession());
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('demo-auth-change', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('demo-auth-change', handleStorage);
+    };
+  }, []);
+  return { isLoaded: true, isSignedIn };
+}
+
 function useDemoUser() {
+  const { isSignedIn } = useDemoAuth();
   return {
     isLoaded: true,
-    isSignedIn: true,
-    user: {
-      firstName: 'Book Bazaar',
-      fullName: 'Demo Reader',
-      primaryEmailAddress: { emailAddress: 'reader@bookbazaar.in' },
-    },
+    isSignedIn,
+    user: isSignedIn
+      ? {
+          firstName: 'Book Bazaar',
+          fullName: 'Demo Reader',
+          primaryEmailAddress: { emailAddress: 'reader@bookbazaar.in' },
+        }
+      : null,
   };
-}
-function useDemoAuth() {
-  return { isLoaded: true, isSignedIn: true };
 }
 
 // Selects the right hook at a stable call-site level (no conditional hook inside a single component)
@@ -121,7 +199,7 @@ function AppRoutes() {
     <Switch>
       <Route path="/" component={HomeRedirect} />
       <Route path="/sign-in/*?" component={SignInPage} />
-      <Route path="/sign-up/*?" component={SignUpPage} />
+      <Route path="/sign-up/*?"><Redirect to="/sign-in" /></Route>
       <Route path="/shop"><Protected><ShopPage /></Protected></Route>
       <Route path="/search"><Protected><SearchPage /></Protected></Route>
       <Route path="/cart"><Protected><CartPage /></Protected></Route>
@@ -163,38 +241,111 @@ function AppRoutes() {
   );
 }
 
+function DemoSignInForm() {
+  const [, setLocation] = useLocation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { lang } = useLanguage();
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setDemoSession(true);
+    setLocation('/shop');
+  };
+
+  return (
+    <form className="demo-auth-card" onSubmit={handleSubmit}>
+      <div className="auth-card-header">
+        <h2>{lang === 'hi' ? 'बुक बाज़ार में साइन इन करें' : 'Sign in to Book Bazaar'}</h2>
+        <LanguageToggle />
+      </div>
+      <p>{lang === 'hi' ? 'अपनी स्कूल किताबों और ऑर्डर देखने के लिए विवरण दर्ज करें।' : 'Enter your details to access your school books & orders.'}</p>
+      
+      <label className="demo-auth-label">
+        {lang === 'hi' ? 'ईमेल पता' : 'Email address'}
+        <input
+          type="email"
+          required
+          placeholder="parent@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="demo-auth-input"
+        />
+      </label>
+
+      <label className="demo-auth-label">
+        {lang === 'hi' ? 'पासवर्ड' : 'Password'}
+        <input
+          type="password"
+          required
+          placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="demo-auth-input"
+        />
+      </label>
+
+      <button type="submit" className="button button-primary demo-auth-btn">
+        {lang === 'hi' ? 'साइन इन करें' : 'Sign In'} <ArrowRight size={16} />
+      </button>
+      <div className="demo-auth-footer">
+        <small style={{ color: '#718076' }}>
+          {lang === 'hi' ? 'आपके स्कूल एडमिन द्वारा प्रदान किए गए क्रेडेंशियल' : 'Credentials provided by your school admin'}
+        </small>
+      </div>
+    </form>
+  );
+}
+
 function SignInPage() {
-  if (!clerkPubKey) return <Redirect to="/shop" />;
-  return <div className="auth-scene"><div className="auth-aside"><Brand /><p>All the right books<br />for a year of big ideas.</p><small>Thoughtfully selected for every classroom, from Class 1 to 12.</small></div><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div>;
+  const { isSignedIn } = useSafeAuth();
+  if (isSignedIn) return <Redirect to="/shop" />;
+
+  return (
+    <div className="auth-scene">
+      <div className="auth-aside">
+        <Brand />
+        <p>All the right books<br />for a year of big ideas.</p>
+        <small>Thoughtfully selected for every classroom, from Class 1 to 12.</small>
+      </div>
+      {clerkPubKey ? (
+        <SignIn routing="path" path={`${basePath}/sign-in`} />
+      ) : (
+        <DemoSignInForm />
+      )}
+    </div>
+  );
 }
-function SignUpPage() {
-  if (!clerkPubKey) return <Redirect to="/shop" />;
-  return <div className="auth-scene"><div className="auth-aside"><Brand /><p>A fresh chapter<br />starts right here.</p><small>Join families making school shopping a little simpler.</small></div><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div>;
-}
-// Clerk-aware version â€” only used inside ClerkProvider
+
+// Clerk-aware version — only used inside ClerkProvider
 function HomeRedirectClerk() {
   const { isLoaded, isSignedIn } = useAuth();
   if (!isLoaded) return <LoadingPage />;
-  return isSignedIn ? <Redirect to="/shop" /> : <LandingPage />;
-}
-// Standalone version â€” no Clerk dependency
-function HomeRedirectDemo() {
-  return <Redirect to="/shop" />;
+  return isSignedIn ? <Redirect to="/shop" /> : <Redirect to="/sign-in" />;
 }
 
-// Clerk-aware guard â€” only used inside ClerkProvider
+// Standalone version — no Clerk dependency
+function HomeRedirectDemo() {
+  const { isSignedIn } = useDemoAuth();
+  return isSignedIn ? <Redirect to="/shop" /> : <Redirect to="/sign-in" />;
+}
+
+// Clerk-aware guard — only used inside ClerkProvider
 function ProtectedClerk({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
   if (!isLoaded) return <LoadingPage />;
   if (!isSignedIn) return <Redirect to="/sign-in" />;
   return <>{children}</>;
 }
-// Standalone passthrough â€” no auth required
+
+// Standalone guard — checks demo session
 function ProtectedDemo({ children }: { children: ReactNode }) {
+  const { isSignedIn } = useDemoAuth();
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
   return <>{children}</>;
 }
 
-// Aliases resolved once at module load â€” stable component references, no conditional hooks
+// Aliases resolved once at module load — stable component references, no conditional hooks
 const HomeRedirect = clerkPubKey ? HomeRedirectClerk : HomeRedirectDemo;
 const Protected = clerkPubKey ? ProtectedClerk : ProtectedDemo;
 
@@ -219,14 +370,14 @@ function LandingPage() {
       subjects={filters.data?.subjects ?? []}
       bookCount={summary.data?.bookCount ?? 0}
     />
-    <header className="landing-nav wrap"><Brand /><div className="nav-help"><CircleHelp size={17} /> Here for the school year</div><div className="nav-actions"><Link href="/sign-in" className="nav-signin">Sign in</Link><Link href="/sign-up" className="button button-primary" data-testid="link-create-account">Create account <ArrowUpRight size={16} /></Link></div></header>
+    <header className="landing-nav wrap"><Brand /><div className="nav-help"><CircleHelp size={17} /> Here for the school year</div><div className="nav-actions"><Link href="/sign-in" className="nav-signin">Sign in</Link><Link href="/sign-in" className="button button-primary" data-testid="link-create-account">Create account <ArrowUpRight size={16} /></Link></div></header>
     <section className="landing-hero wrap">
-      <div className="hero-copy"><div className="eyebrow"><span /> SCHOOL LISTS, SORTED.</div><h1>Every class.<br />Every <em>bright</em><br />beginning.</h1><p>The books students need, picked with care and delivered to your door. Make this school year the easiest one yet.</p><div className="hero-ctas"><Link href="/sign-up" className="button button-primary button-large">Start your book list <ArrowRight size={18} /></Link><Link href="/sign-in" className="text-link">Already have an account <ArrowUpRight size={15} /></Link></div><div className="trust-row"><span className="trust-icon"><ShieldCheck size={19} /></span><span><b>Safe, simple & school-ready</b><small>Thoughtfully chosen for the new school year</small></span></div></div>
+      <div className="hero-copy"><div className="eyebrow"><span /> SCHOOL LISTS, SORTED.</div><h1>Every class.<br />Every <em>bright</em><br />beginning.</h1><p>The books students need, picked with care and delivered to your door. Make this school year the easiest one yet.</p><div className="hero-ctas"><Link href="/sign-in" className="button button-primary button-large">Start your book list <ArrowRight size={18} /></Link><Link href="/sign-in" className="text-link">Already have an account <ArrowUpRight size={15} /></Link></div><div className="trust-row"><span className="trust-icon"><ShieldCheck size={19} /></span><span><b>Safe, simple & school-ready</b><small>Thoughtfully chosen for the new school year</small></span></div></div>
       <div className="hero-art" aria-label="School books arranged on a desk"><div className="art-frame"><img src="/books-editorial.jpg" alt="Colorful school books ready for a new term" /><div className="art-stamp"><span>THE</span><b>NEW<br />TERM</b><span>STARTS HERE</span></div></div><div className="art-note"><Sparkles size={16} /> Good books. Great starts.</div><div className="art-count"><b>{summary.data?.bookCount ?? '120+'}</b><span>books for<br />every learner</span></div></div>
     </section>
     <section className="landing-strip"><div className="wrap strip-inner"><span>CLASS 1â€”12</span><i /><span>CURATED SUBJECTS</span><i /><span>DOORSTEP DELIVERY</span><i /><span>PAY ON DELIVERY</span>{health.data?.status === 'ok' && <span className="health-live"><i /> Shop is online</span>}</div></section>
-    <section className="landing-why wrap"><div><span className="eyebrow">THE BOOK BAZAAR DIFFERENCE</span><h2>A school list,<br /><em>without the scramble.</em></h2></div><div className="why-copy"><p>Skip the last-minute hunt from shop to shop. Find the right titles by class and subject, bundle what you need, and check out in a few easy steps.</p><Link href="/sign-up" className="text-link">Find your books <ArrowRight size={16} /></Link></div></section>
-    <section className="landing-promo wrap"><div className="promo-mini"><div className="promo-art"><img src={featured?.imageUrl || '/books-editorial.jpg'} alt="" onError={(event) => { event.currentTarget.src = '/books-editorial.jpg'; }} /><div className="promo-copy"><span>{featured?.eyebrow || 'A LITTLE SOMETHING EXTRA'}</span><b>{featured?.title || 'A brighter school year, for less.'}</b><small>{featured?.subtitle || 'Explore thoughtful savings on class essentials.'}</small><Link href="/sign-up" className="promo-link">Explore offers <ArrowRight size={15} /></Link></div><strong>{featured?.discount ? `${featured.discount}%` : 'SAVE'}<small>ON SELECT<br />SCHOOL LISTS</small></strong></div></div><div className="landing-footer"><Brand compact /><span>Thoughtful books for curious minds.</span><small>Book Bazaar</small></div></section>
+    <section className="landing-why wrap"><div><span className="eyebrow">THE BOOK BAZAAR DIFFERENCE</span><h2>A school list,<br /><em>without the scramble.</em></h2></div><div className="why-copy"><p>Skip the last-minute hunt from shop to shop. Find the right titles by class and subject, bundle what you need, and check out in a few easy steps.</p><Link href="/sign-in" className="text-link">Find your books <ArrowRight size={16} /></Link></div></section>
+    <section className="landing-promo wrap"><div className="promo-mini"><div className="promo-art"><img src={featured?.imageUrl || '/books-editorial.jpg'} alt="" onError={(event) => { event.currentTarget.src = '/books-editorial.jpg'; }} /><div className="promo-copy"><span>{featured?.eyebrow || 'A LITTLE SOMETHING EXTRA'}</span><b>{featured?.title || 'A brighter school year, for less.'}</b><small>{featured?.subtitle || 'Explore thoughtful savings on class essentials.'}</small><Link href="/sign-in" className="promo-link">Explore offers <ArrowRight size={15} /></Link></div><strong>{featured?.discount ? `${featured.discount}%` : 'SAVE'}<small>ON SELECT<br />SCHOOL LISTS</small></strong></div></div><div className="landing-footer"><Brand compact /><span>Thoughtful books for curious minds.</span><small>Book Bazaar</small></div></section>
   </main>;
 }
 
@@ -265,7 +416,7 @@ function MobileAppHome({
 
     <section className="mobile-featured-offer" aria-label="Featured book offer">
       {promotion ? <Link
-        href="/sign-up"
+        href="/sign-in"
         className="mobile-offer-card"
         style={{
           backgroundColor: promotion.background,
@@ -277,7 +428,7 @@ function MobileAppHome({
         <h1>{promotion.title}</h1>
         <p>{promotion.subtitle}</p>
         <span className="mobile-offer-button">Browse the offer <ArrowRight size={15} /></span>
-      </Link> : <Link href="/sign-up" className="mobile-offer-card mobile-offer-fallback">
+      </Link> : <Link href="/sign-in" className="mobile-offer-card mobile-offer-fallback">
         <span className="mobile-offer-eyebrow">BOOKS FOR EVERY CLASSROOM</span>
         <h1>A good year<br />starts with a good book.</h1>
         <span className="mobile-offer-button">Browse books <ArrowRight size={15} /></span>
@@ -322,7 +473,7 @@ function MobileAppHome({
       </div>
     </section>
 
-    <Link href="/sign-up" className="mobile-start-card">
+    <Link href="/sign-in" className="mobile-start-card">
       <span className="mobile-start-icon"><Sparkles size={19} /></span>
       <span><b>Build your school list</b><small>Good books, all in one place</small></span>
       <ArrowRight size={17} />
@@ -348,14 +499,6 @@ function money(value: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value || 0);
 }
 
-const navItems = [
-  { href: '/shop', label: 'Home', Icon: Home },
-  { href: '/search', label: 'Search', Icon: Search },
-  { href: '/cart', label: 'Cart', Icon: ShoppingCart },
-  { href: '/return', label: 'Return', Icon: RotateCcw },
-  { href: '/profile', label: 'Profile', Icon: UserRound },
-];
-
 function MobileBottomNav({
   active,
   count,
@@ -367,12 +510,21 @@ function MobileBottomNav({
 }) {
   const { isSignedIn: authIsSignedIn } = useSafeAuth();
   const isSignedIn = isSignedInProp ?? authIsSignedIn;
+  const { lang } = useLanguage();
+
+  const items = [
+    { href: '/shop', label: lang === 'hi' ? 'होम' : 'Home', Icon: Home },
+    { href: '/search', label: lang === 'hi' ? 'खोजें' : 'Search', Icon: Search },
+    { href: '/cart', label: lang === 'hi' ? 'कार्ट' : 'Cart', Icon: ShoppingCart },
+    { href: '/return', label: lang === 'hi' ? 'वापसी' : 'Return', Icon: RotateCcw },
+    { href: '/profile', label: lang === 'hi' ? 'प्रोफ़ाइल' : 'Profile', Icon: UserRound },
+  ];
 
   return <nav className="bottom-nav" aria-label="Main navigation">
-    {navItems.map(({ href, label, Icon }) => {
+    {items.map(({ href, label, Icon }) => {
       const destination = label === 'Home' && !isSignedIn ? '/' : href;
-      return <Link key={href} href={destination} className={`bottom-link ${active === href ? 'selected' : ''}`} data-testid={`link-nav-${label.toLowerCase()}`}>
-        <span className="nav-icon-wrap"><Icon size={22} strokeWidth={active === href ? 2.2 : 1.8} />{label === 'Cart' && count > 0 && <i>{count}</i>}</span>
+      return <Link key={href} href={destination} className={`bottom-link ${active === href ? 'selected' : ''}`} data-testid={`link-nav-${href.slice(1)}`}>
+        <span className="nav-icon-wrap"><Icon size={22} strokeWidth={active === href ? 2.2 : 1.8} />{href === '/cart' && count > 0 && <i>{count}</i>}</span>
         <small>{label}</small>
       </Link>;
     })}
@@ -383,11 +535,38 @@ function AppShell({ children, active }: { children: ReactNode; active: string })
   const { user } = useSafeUser();
   const cartQuery = useGetCart({ query: { queryKey: getGetCartQueryKey() } });
   const count = cartQuery.data?.itemCount ?? 0;
+  const { lang } = useLanguage();
+
   return <div className="app-shell">
-    <header className="shop-header"><div className="wrap header-inner"><Brand compact /><div className="header-location"><MapPin size={17} /><span><small>DELIVERY DETAILS</small><b>Confirm at checkout</b></span><ChevronDown size={14} /></div><nav className="header-tabs" aria-label="Shop navigation"><Link href="/shop" className={active === '/shop' ? 'tab-active' : ''} data-testid="link-header-home">Home</Link><Link href="/search" className={active === '/search' ? 'tab-active' : ''} data-testid="link-header-search">Search</Link><Link href="/return" className={active === '/return' ? 'tab-active' : ''} data-testid="link-header-return">Return</Link></nav><div className="header-search"><Search size={17} /><Link href="/search">Search books, authors, subjects...</Link><kbd>⌘ K</kbd></div><Link href="/cart" className="header-cart" aria-label="Open cart" data-testid="link-header-cart"><ShoppingBag size={20} /><span>{count}</span></Link><Link href="/profile" className="header-avatar" aria-label="Profile">{user?.firstName?.slice(0, 1) || 'P'}</Link></div></header>
+    <header className="shop-header">
+      <div className="wrap header-inner">
+        <Brand compact />
+        <div className="header-location">
+          <MapPin size={17} />
+          <span>
+            <small>{lang === 'hi' ? 'डिलीवरी विवरण' : 'DELIVERY DETAILS'}</small>
+            <b>{lang === 'hi' ? 'चेकआउट पर पुष्टि करें' : 'Confirm at checkout'}</b>
+          </span>
+          <ChevronDown size={14} />
+        </div>
+        <nav className="header-tabs" aria-label="Shop navigation">
+          <Link href="/shop" className={active === '/shop' ? 'tab-active' : ''} data-testid="link-header-home">{lang === 'hi' ? 'होम' : 'Home'}</Link>
+          <Link href="/search" className={active === '/search' ? 'tab-active' : ''} data-testid="link-header-search">{lang === 'hi' ? 'खोजें' : 'Search'}</Link>
+          <Link href="/return" className={active === '/return' ? 'tab-active' : ''} data-testid="link-header-return">{lang === 'hi' ? 'वापसी' : 'Return'}</Link>
+        </nav>
+        <div className="header-search">
+          <Search size={17} />
+          <Link href="/search">{lang === 'hi' ? 'पुस्तकें, लेखक या विषय खोजें...' : 'Search books, authors, subjects...'}</Link>
+          <kbd>⌘ K</kbd>
+        </div>
+        <LanguageToggle />
+        <Link href="/cart" className="header-cart" aria-label="Open cart" data-testid="link-header-cart"><ShoppingBag size={20} /><span>{count}</span></Link>
+        <Link href="/profile" className="header-avatar" aria-label="Profile">{user?.firstName?.slice(0, 1) || 'P'}</Link>
+      </div>
+    </header>
     <main className="wrap page-content">{children}</main>
     <MobileBottomNav active={active} count={count} />
-    <footer className="desktop-footer wrap"><span>Book Bazaar Â· The school bookshop</span><span>Books chosen for a better school day.</span></footer>
+    <footer className="desktop-footer wrap"><span>Book Bazaar · The school bookshop</span><span>{lang === 'hi' ? 'बेहतर स्कूल दिन के लिए चुनी गई पुस्तकें।' : 'Books chosen for a better school day.'}</span></footer>
   </div>;
 }
 
@@ -739,12 +918,193 @@ function ReturnPage() {
   );
 }
 
+function PrintInvoiceModal({ order, onClose }: { order: Order; onClose: () => void }) {
+  const { lang } = useLanguage();
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const calculatedSubtotal = order.items.reduce((sum, item) => sum + (item.lineTotal || item.unitPrice * item.quantity), 0);
+  const totalDiscount = order.items.reduce((sum, item) => {
+    const orig = (item as any).originalPrice || Math.round(item.unitPrice * 1.15);
+    return sum + (orig - item.unitPrice) * item.quantity;
+  }, 0);
+
+  return (
+    <div className="invoice-modal-backdrop" onClick={onClose}>
+      <div className="invoice-modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="invoice-modal-actions no-print">
+          <button type="button" className="button button-primary print-now-btn" onClick={handlePrint}>
+            <Printer size={16} /> {lang === 'hi' ? 'प्रिंट रसीद' : 'Print Invoice'}
+          </button>
+          <button type="button" className="invoice-modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        </div>
+
+        <div className="printable-invoice-paper" id="printable-invoice">
+          <div className="invoice-header">
+            <div className="invoice-brand">
+              <span className="brand-mark"><BookOpen size={22} /></span>
+              <div>
+                <h2>Book Bazaar</h2>
+                <small>The School Bookshop</small>
+              </div>
+            </div>
+            <div className="invoice-meta">
+              <h3>INVOICE / TAX RECEIPT</h3>
+              <p><b>Order #:</b> #{order.id.slice(-8).toUpperCase()}</p>
+              <p><b>Date:</b> {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              <p><b>Payment Mode:</b> Cash on Delivery</p>
+            </div>
+          </div>
+
+          <div className="invoice-addresses-grid">
+            <div className="invoice-address-box">
+              <span className="eyebrow">DELIVERY / SHIPPING ADDRESS</span>
+              <h4>{order.customerName}</h4>
+              <p>{order.addressLine}</p>
+              <p>{order.city}, {order.state} - {order.postalCode}</p>
+              <p><b>Phone:</b> {order.phone}</p>
+            </div>
+            <div className="invoice-address-box">
+              <span className="eyebrow">BILLING ADDRESS</span>
+              <h4>{order.customerName}</h4>
+              <p>{order.addressLine}</p>
+              <p>{order.city}, {order.state} - {order.postalCode}</p>
+              <p><b>Phone:</b> {order.phone}</p>
+            </div>
+          </div>
+
+          <table className="invoice-items-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Book Title</th>
+                <th>Price</th>
+                <th>Discount</th>
+                <th>Qty</th>
+                <th className="text-right">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.items.map((item, idx) => {
+                const origPrice = (item as any).originalPrice || Math.round(item.unitPrice * 1.15);
+                const discountPerUnit = origPrice - item.unitPrice;
+                return (
+                  <tr key={item.bookId || idx}>
+                    <td>{idx + 1}</td>
+                    <td>
+                      <b>{item.title}</b>
+                    </td>
+                    <td>{money(origPrice)}</td>
+                    <td className="discount-text">-{money(discountPerUnit)}</td>
+                    <td>{item.quantity}</td>
+                    <td className="text-right"><b>{money(item.lineTotal)}</b></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div className="invoice-summary-block">
+            <div className="invoice-summary-row">
+              <span>Items Total:</span>
+              <span>{money(calculatedSubtotal + totalDiscount)}</span>
+            </div>
+            {totalDiscount > 0 && (
+              <div className="invoice-summary-row discount-row">
+                <span>Discount Saved:</span>
+                <span>-{money(totalDiscount)}</span>
+              </div>
+            )}
+            <div className="invoice-summary-row">
+              <span>Delivery Charge:</span>
+              <span>FREE</span>
+            </div>
+            <div className="invoice-summary-row final-total-row">
+              <span>Grand Total:</span>
+              <span>{money(order.total || calculatedSubtotal)}</span>
+            </div>
+          </div>
+
+          <div className="invoice-footer-note">
+            <p>Thank you for shopping with Book Bazaar! For support or inquiries, contact hello@bookbazaar.in</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OrdersPage() {
   const orders = useListOrders({ query: { queryKey: getListOrdersQueryKey() } });
-  return <AppShell active="/orders"><PageHeading kicker="THE JOURNEY SO FAR" title="Your orders." text="All the books youâ€™ve brought home, in one place." />{orders.isLoading ? <Busy label="Finding your orders" /> : orders.isError ? <ErrorState retry={() => { void orders.refetch(); }} /> : orders.data?.length ? <div className="orders-list">{orders.data.map((order) => <OrderCard order={order} key={order.id} />)}</div> : <EmptyState title="Your story starts with a book." text="Once you place an order, youâ€™ll find updates and delivery details here." action="Explore the books" to="/shop" />}</AppShell>;
+  const [printOrder, setPrintOrder] = useState<Order | null>(null);
+
+  return (
+    <AppShell active="/orders">
+      <PageHeading kicker="THE JOURNEY SO FAR" title="Your orders." text="All the books you’ve brought home, in one place." />
+      {orders.isLoading ? (
+        <Busy label="Finding your orders" />
+      ) : orders.isError ? (
+        <ErrorState retry={() => { void orders.refetch(); }} />
+      ) : orders.data?.length ? (
+        <div className="orders-list">
+          {orders.data.map((order) => (
+            <OrderCard order={order} key={order.id} onPrint={(o) => setPrintOrder(o)} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="Your story starts with a book." text="Once you place an order, you’ll find updates and delivery details here." action="Explore the books" to="/shop" />
+      )}
+      {printOrder && <PrintInvoiceModal order={printOrder} onClose={() => setPrintOrder(null)} />}
+    </AppShell>
+  );
 }
-function OrderCard({ order }: { order: Order }) {
-  return <Link href={`/orders/${order.id}`} className="order-card" data-testid={`card-order-${order.id}`}><div className="order-card-head"><span className={`status-pill status-${order.status}`}>{order.status}</span><span>{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span><ArrowUpRight size={16} /></div><div className="order-card-items"><div className="order-thumbs">{order.items.slice(0, 3).map((item) => <img src={item.imageUrl || '/books-editorial.jpg'} key={item.bookId} alt="" />)}</div><div><b>{order.items[0]?.title}{order.items.length > 1 ? ` + ${order.items.length - 1} more` : ''}</b><small>{order.itemCount} books &middot; Cash on delivery</small></div></div><div className="order-card-foot"><span>Order <b>#{order.id.slice(-8).toUpperCase()}</b></span><strong>{money(order.total)}</strong></div></Link>;
+
+function OrderCard({ order, onPrint }: { order: Order; onPrint?: (order: Order) => void }) {
+  const { lang } = useLanguage();
+  return (
+    <div className="order-card-container">
+      <Link href={`/orders/${order.id}`} className="order-card" data-testid={`card-order-${order.id}`}>
+        <div className="order-card-head">
+          <span className={`status-pill status-${order.status}`}>{order.status}</span>
+          <span>{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+          <ArrowUpRight size={16} />
+        </div>
+        <div className="order-card-items">
+          <div className="order-thumbs">
+            {order.items.slice(0, 3).map((item) => (
+              <img src={item.imageUrl || '/books-editorial.jpg'} key={item.bookId} alt="" />
+            ))}
+          </div>
+          <div>
+            <b>{order.items[0]?.title}{order.items.length > 1 ? ` + ${order.items.length - 1} more` : ''}</b>
+            <small>{order.itemCount} {lang === 'hi' ? 'पुस्तकें' : 'books'} &middot; Cash on delivery</small>
+          </div>
+        </div>
+        <div className="order-card-foot">
+          <span>Order <b>#{order.id.slice(-8).toUpperCase()}</b></span>
+          <div className="order-foot-right">
+            <strong>{money(order.total)}</strong>
+            {onPrint && (
+              <button
+                type="button"
+                className="order-print-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onPrint(order);
+                }}
+                title="Print Order Receipt"
+              >
+                <Printer size={13} /> {lang === 'hi' ? 'प्रिंट' : 'Print'}
+              </button>
+            )}
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
 }
 
 const RETURN_REASONS = [
@@ -861,12 +1221,14 @@ function OrderDetailPage() {
   const params = useRouteParams();
   const orderId = params.orderId || '';
   const orderQuery = useGetOrder(orderId, { query: { enabled: !!orderId, queryKey: getGetOrderQueryKey(orderId) } });
+  const { lang } = useLanguage();
   
   // For testing the UI: force the status to be 'delivered' on whatever order is loaded
   const order = orderQuery.data ? { ...orderQuery.data, status: 'delivered' as const } : undefined;
 
   const [returnItem, setReturnItem] = useState<{ bookId: string; title: string; imageUrl: string; quantity: number; unitPrice: number; lineTotal: number } | null>(null);
   const [returnedItems, setReturnedItems] = useState<Set<string>>(new Set());
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   const handleReturnClose = () => {
     if (returnItem) {
@@ -884,8 +1246,18 @@ function OrderDetailPage() {
   return <AppShell active="/orders">
     <Link href="/orders" className="back-link"><ArrowLeft size={15} /> All orders</Link>
     <PageHeading kicker={`ORDER #${order.id.slice(-8).toUpperCase()}`} title="On its way to you." text={`Placed ${new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}.`}>
-      <span className={`status-pill status-${order.status}`}>{order.status}</span>
+      <div className="heading-actions-row">
+        <span className={`status-pill status-${order.status}`}>{order.status}</span>
+        <button
+          type="button"
+          className="button button-outline print-detail-btn"
+          onClick={() => setShowPrintModal(true)}
+        >
+          <Printer size={15} /> {lang === 'hi' ? 'प्रिंट रसीद' : 'Print Invoice'}
+        </button>
+      </div>
     </PageHeading>
+    {showPrintModal && <PrintInvoiceModal order={order} onClose={() => setShowPrintModal(false)} />}
     <div className="detail-layout">
       <section className="detail-main">
         <div className="tracking-card">
@@ -962,7 +1334,10 @@ function ProfilePage() {
   const [, setLocation] = useLocation();
   const name = user?.fullName || user?.firstName || 'Book Bazaar reader';
   const handleSignOut = () => {
-    setLocation('/');
+    if (!clerkPubKey) {
+      setDemoSession(false);
+    }
+    setLocation('/sign-in');
   };
   return <AppShell active="/profile"><PageHeading kicker="YOUR BOOK BAZAAR" title="A little about you." text="Your account, your orders, your school-year essentials." /><div className="profile-layout"><section className="profile-card"><div className="profile-avatar">{isLoaded ? (user?.firstName?.slice(0,1) || 'B') : 'â€¦'}</div><div><span className="eyebrow">SIGNED IN AS</span><h2>{name}</h2><p>{user?.primaryEmailAddress?.emailAddress || ''}</p></div><span className="verified-mark"><ShieldCheck size={16} /> Verified account</span></section><section className="profile-quick"><Link href="/orders" className="profile-action"><span className="profile-action-icon"><ClipboardList size={19} /></span><span><b>Your orders</b><small>{orders.data?.length || 0} orders placed</small></span><ChevronRight size={17} /></Link><Link href="/cart" className="profile-action"><span className="profile-action-icon"><ShoppingBag size={19} /></span><span><b>Your basket</b><small>Pick up where you left off</small></span><ChevronRight size={17} /></Link><button className="profile-action logout-action" onClick={handleSignOut} data-testid="button-sign-out"><span className="profile-action-icon"><LogOut size={19} /></span><span><b>Sign out</b><small>See you again soon</small></span><ChevronRight size={17} /></button></section><div className="profile-help"><CircleHelp size={18} /><span><b>Need a hand?</b><small>Weâ€™re happy to help with your order or book list.</small></span><a href="mailto:hello@bookbazaar.in" className="text-link">Get in touch <ArrowUpRight size={14} /></a></div></div></AppShell>;
 }
@@ -975,6 +1350,17 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 function App() {
-  return <TooltipProvider><WouterRouter base={basePath}><RoutedErrorBoundary><AppRoutes /></RoutedErrorBoundary></WouterRouter><Toaster /></TooltipProvider>;
+  return (
+    <LanguageProvider>
+      <TooltipProvider>
+        <WouterRouter base={basePath}>
+          <RoutedErrorBoundary>
+            <AppRoutes />
+          </RoutedErrorBoundary>
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </LanguageProvider>
+  );
 }
 export default App;
