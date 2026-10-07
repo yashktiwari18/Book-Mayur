@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>BookBazaar - Your Orders</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Newsreader / Playfair Display & Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cream: '#FAF6EE',
+              card: '#FFFFFF',
+              darkGreen: '#234433',
+              terracotta: '#B65D43',
+              sageBadgeBg: '#E3ECE4',
+              sageBadgeText: '#2C533D',
+              tanBadgeBg: '#F5EBD7',
+              tanBadgeText: '#875C29',
+              subtleGray: '#8C9088',
+              borderLine: '#F0ECE1'
+            }
+          },
+          fontFamily: {
+            serif: ['Newsreader', 'serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for Book Covers & Fine Tuning -->
+<style data-purpose="custom-decorations">
+    /* Subtle book spine effect */
+    .book-cover {
+      position: relative;
+      box-shadow: 1px 3px 6px rgba(0,0,0,0.18);
+      border-radius: 4px;
+    }
+    .book-cover::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(to right, rgba(0,0,0,0.2), transparent);
+      border-top-left-radius: 4px;
+      border-bottom-left-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-brand-cream text-stone-800 font-sans min-h-screen flex justify-center selection:bg-brand-darkGreen/10">
+<!-- BEGIN: MobileContainer -->
+<!-- Container replicating the mobile screen layout -->
+<div class="w-full max-w-md min-h-screen bg-brand-cream flex flex-col justify-between relative pb-24 shadow-sm">
+<!-- BEGIN: TopBar -->
+<header class="w-full px-5 pt-5 pb-4 flex items-center justify-between border-b border-stone-200/50">
+<!-- Logo block -->
+<div class="flex items-center gap-2">
+<div class="w-9 h-9 rounded-lg bg-brand-darkGreen flex items-center justify-center text-white shadow-sm">
+<!-- Open book icon -->
+<svg class="w-5 h-5 text-white stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-xl font-bold tracking-tight text-stone-800">
+          book<span class="text-[#BC6346]">bazaar</span>
+</span>
+</div>
+<!-- Action Icons: Location, Cart, Avatar -->
+<div class="flex items-center gap-3">
+<!-- Location pin -->
+<button aria-label="Location" class="text-stone-600 hover:text-stone-900 transition-colors p-1" type="button">
+<svg class="w-5 h-5 stroke-[1.7]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Cart with badge -->
+<button aria-label="Cart" class="relative p-1.5 rounded-lg border border-stone-300 text-stone-700 bg-transparent" type="button">
+<svg class="w-5 h-5 stroke-[1.6]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute -top-1.5 -right-1.5 bg-[#BA5438] text-white text-[10px] font-semibold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-brand-cream">
+            1
+          </span>
+</button>
+<!-- User profile avatar -->
+<div class="w-8 h-8 rounded-full bg-[#E0E7DC] text-[#47604B] flex items-center justify-center font-serif text-sm font-semibold">
+          B
+        </div>
+</div>
+</header>
+<!-- END: TopBar -->
+<!-- BEGIN: MainContent -->
+<main class="px-5 pt-6 flex-grow">
+<!-- Headline & Subtitle Section -->
+<section class="mb-6">
+<p class="text-[11px] font-bold tracking-[0.14em] text-brand-terracotta uppercase mb-1">
+          The Journey So Far
+        </p>
+<h1 class="font-serif text-4xl text-stone-900 tracking-tight font-medium mb-1.5">
+          Your orders.
+        </h1>
+<p class="text-xs text-stone-500 font-normal">
+          All the books you've brought home, in one place.
+        </p>
+</section>
+<!-- Orders List -->
+<div class="space-y-4">
+<!-- BEGIN: OrderCard1 -->
+<article class="bg-brand-card rounded-2xl p-4 shadow-sm border border-stone-200/70" data-purpose="order-card">
+<!-- Card Header: Status, Date, Link Icon -->
+<div class="flex items-center justify-between mb-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-sageBadgeBg text-brand-sageBadgeText">
+              Placed
+            </span>
+<div class="flex items-center gap-2">
+<span class="text-xs text-stone-500 font-normal">5 Oct 2026</span>
+<a aria-label="View order details" class="text-stone-600 hover:text-stone-900" href="#">
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+</div>
+</div>
+<!-- Card Body: Book Thumbnails & Description -->
+<div class="flex items-center gap-4 mb-4">
+<!-- Overlapping Covers -->
+<div class="relative w-16 h-16 flex-shrink-0">
+<!-- Book 1 (Front/Left) -->
+<div class="book-cover absolute left-0 top-0 w-9 h-14 bg-[#1E3E34] border border-[#2D5A4C] rounded p-1 flex flex-col justify-between z-10">
+<div class="w-full flex justify-center pt-2">
+<div class="w-5 h-5 border border-stone-300/60 flex items-center justify-center rotate-45 scale-75">
+<span class="text-[6px] text-amber-200 font-bold -rotate-45">A</span>
+</div>
+</div>
+<div class="h-1 bg-emerald-800/80 rounded w-full"></div>
+</div>
+<!-- Book 2 (Back/Right) -->
+<div class="book-cover absolute left-5 top-0 w-9 h-14 bg-[#233549] border border-[#3A4D62] rounded p-1 flex flex-col justify-between">
+<div class="w-full flex justify-center pt-2">
+<div class="w-4 h-4 rounded-full border border-sky-300/40 relative flex items-center justify-center">
+<div class="w-2 h-2 rounded-full bg-amber-100/60"></div>
+</div>
+</div>
+<div class="h-1 bg-slate-700 rounded w-full"></div>
+</div>
+</div>
+<!-- Title & Subtitle Details -->
+<div class="flex-1 min-w-0">
+<h2 class="text-sm font-semibold text-stone-800 truncate">
+                Everyday Mathematics <span class="font-normal text-stone-600">+ 1 more</span>
+</h2>
+<p class="text-xs text-stone-500 mt-0.5">
+                2 books · Cash on delivery
+              </p>
+</div>
+</div>
+<!-- Divider -->
+<hr class="border-t border-stone-100 my-3"/>
+<!-- Card Footer: Order Id & Price -->
+<div class="flex items-center justify-between text-xs">
+<span class="text-stone-500">
+              Order <span class="font-medium text-stone-700">#-9FVIPJY</span>
+</span>
+<span class="text-sm font-bold text-stone-800">
+              ₹748
+            </span>
+</div>
+</article>
+<!-- END: OrderCard1 -->
+<!-- BEGIN: OrderCard2 -->
+<article class="bg-brand-card rounded-2xl p-4 shadow-sm border border-stone-200/70" data-purpose="order-card">
+<!-- Card Header: Status, Date, Link Icon -->
+<div class="flex items-center justify-between mb-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-tanBadgeBg text-brand-tanBadgeText">
+              Processing
+            </span>
+<div class="flex items-center gap-2">
+<span class="text-xs text-stone-500 font-normal">4 Oct 2026</span>
+<a aria-label="View order details" class="text-stone-600 hover:text-stone-900" href="#">
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+</div>
+</div>
+<!-- Card Body: Book Thumbnails & Description -->
+<div class="flex items-center gap-4 mb-4">
+<!-- Overlapping Covers -->
+<div class="relative w-16 h-16 flex-shrink-0">
+<!-- Book 1 (Front/Left) -->
+<div class="book-cover absolute left-0 top-0 w-9 h-14 bg-[#1E3E34] border border-[#2D5A4C] rounded p-1 flex flex-col justify-between z-10">
+<div class="w-full flex justify-center pt-2">
+<div class="w-5 h-5 border border-stone-300/60 flex items-center justify-center rotate-45 scale-75">
+<span class="text-[6px] text-amber-200 font-bold -rotate-45">A</span>
+</div>
+</div>
+<div class="h-1 bg-emerald-800/80 rounded w-full"></div>
+</div>
+<!-- Book 2 (Back/Right - Warm Terracotta Book) -->
+<div class="book-cover absolute left-5 top-0 w-9 h-14 bg-[#8C523A] border border-[#A2644C] rounded p-1 flex flex-col justify-between">
+<div class="w-full flex justify-center pt-2 text-[#E8D0C5]">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 4.5C8 3 4 4.5 4 4.5v13.5s4-1.5 8 0c4-1.5 8 0 8 0V4.5s-4-1.5-8 0z"></path>
+</svg>
+</div>
+<div class="h-1 bg-stone-700/40 rounded w-full"></div>
+</div>
+</div>
+<!-- Title & Subtitle Details -->
+<div class="flex-1 min-w-0">
+<h2 class="text-sm font-semibold text-stone-800 truncate">
+                Everyday Mathematics <span class="font-normal text-stone-600">+ 1 more</span>
+</h2>
+<p class="text-xs text-stone-500 mt-0.5">
+                2 books · Cash on delivery
+              </p>
+</div>
+</div>
+<!-- Divider -->
+<hr class="border-t border-stone-100 my-3"/>
+<!-- Card Footer: Order Id & Price -->
+<div class="flex items-center justify-between text-xs">
+<span class="text-stone-500">
+              Order <span class="font-medium text-stone-700">#92834112</span>
+</span>
+<span class="text-sm font-bold text-stone-800">
+              ₹678
+            </span>
+</div>
+</article>
+<!-- END: OrderCard2 -->
+</div>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: BottomNavigation -->
+<nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-stone-200/80 px-4 py-2 z-50">
+<ul class="flex items-center justify-between">
+<!-- Home -->
+<li>
+<a class="flex flex-col items-center gap-1 text-stone-400 hover:text-stone-600" href="#">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Home</span>
+</a>
+</li>
+<!-- Search -->
+<li>
+<a class="flex flex-col items-center gap-1 text-stone-400 hover:text-stone-600" href="#">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Search</span>
+</a>
+</li>
+<!-- Cart with badge -->
+<li>
+<a class="flex flex-col items-center gap-1 text-stone-400 hover:text-stone-600 relative" href="#">
+<div class="relative">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute -top-1.5 -right-2 bg-[#BA5438] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
+                1
+              </span>
+</div>
+<span class="text-[10px] font-medium tracking-tight">Cart</span>
+</a>
+</li>
+<!-- Orders (Active) -->
+<li>
+<a class="flex flex-col items-center gap-1 text-[#2A5C43]" href="#">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-bold tracking-tight text-[#2A5C43]">Orders</span>
+</a>
+</li>
+<!-- Profile -->
+<li>
+<a class="flex flex-col items-center gap-1 text-stone-400 hover:text-stone-600" href="#">
+<svg class="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Profile</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- END: BottomNavigation -->
+</div>
+<!-- END: MobileContainer -->
+</body></html>

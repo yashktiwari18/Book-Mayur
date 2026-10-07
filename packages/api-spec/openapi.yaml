@@ -1,0 +1,385 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: catalog
+    description: Books, class and subject filters, and promotions
+  - name: cart
+    description: Customer shopping cart
+  - name: orders
+    description: Customer orders
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /catalog/summary:
+    get:
+      operationId: getCatalogSummary
+      tags: [catalog]
+      summary: Get bookstore overview
+      responses:
+        "200":
+          description: Catalog overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogSummary"
+  /catalog/filters:
+    get:
+      operationId: getCatalogFilters
+      tags: [catalog]
+      summary: Get available class and subject filters
+      responses:
+        "200":
+          description: Available filters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogFilters"
+  /catalog/promotions:
+    get:
+      operationId: getPromotions
+      tags: [catalog]
+      summary: Get current book promotions
+      responses:
+        "200":
+          description: Current promotions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Promotion"
+  /books:
+    get:
+      operationId: listBooks
+      tags: [catalog]
+      summary: Browse and filter books
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: classLevel
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - in: query
+          name: subject
+          schema:
+            type: string
+        - in: query
+          name: dealOnly
+          schema:
+            type: boolean
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 24
+      responses:
+        "200":
+          description: Matching books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+  /cart:
+    get:
+      operationId: getCart
+      tags: [cart]
+      summary: Get the signed-in customer's cart
+      responses:
+        "200":
+          description: Current cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Sign-in required
+  /cart/items:
+    post:
+      operationId: addCartItem
+      tags: [cart]
+      summary: Add a book to the cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemInput"
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          description: Invalid cart item
+        "401":
+          description: Sign-in required
+  /cart/items/{bookId}:
+    patch:
+      operationId: updateCartItem
+      tags: [cart]
+      summary: Update a cart item's quantity
+      parameters:
+        - in: path
+          name: bookId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemUpdate"
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Sign-in required
+    delete:
+      operationId: removeCartItem
+      tags: [cart]
+      summary: Remove a book from the cart
+      parameters:
+        - in: path
+          name: bookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Sign-in required
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List the signed-in customer's orders
+      responses:
+        "200":
+          description: Customer orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          description: Sign-in required
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place an order from the current cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "201":
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid checkout or empty cart
+        "401":
+          description: Sign-in required
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get an order belonging to the signed-in customer
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customer order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          description: Sign-in required
+        "404":
+          description: Order not found
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Book:
+      type: object
+      required: [id, title, author, subject, classLevel, price, originalPrice, imageUrl, description, rating, inStock]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        author: { type: string }
+        subject: { type: string }
+        classLevel: { type: integer }
+        price: { type: number }
+        originalPrice: { type: number }
+        imageUrl: { type: string }
+        description: { type: string }
+        rating: { type: number }
+        inStock: { type: boolean }
+        badge: { type: ["string", "null"] }
+    Promotion:
+      type: object
+      required: [id, eyebrow, title, subtitle, discount, imageUrl, background]
+      properties:
+        id: { type: string }
+        eyebrow: { type: string }
+        title: { type: string }
+        subtitle: { type: string }
+        discount: { type: integer }
+        imageUrl: { type: string }
+        background: { type: string }
+    ClassFilter:
+      type: object
+      required: [level, label, bookCount]
+      properties:
+        level: { type: integer }
+        label: { type: string }
+        bookCount: { type: integer }
+    SubjectFilter:
+      type: object
+      required: [name, bookCount]
+      properties:
+        name: { type: string }
+        bookCount: { type: integer }
+    CatalogFilters:
+      type: object
+      required: [classes, subjects]
+      properties:
+        classes:
+          type: array
+          items: { $ref: "#/components/schemas/ClassFilter" }
+        subjects:
+          type: array
+          items: { $ref: "#/components/schemas/SubjectFilter" }
+    CatalogSummary:
+      type: object
+      required: [bookCount, classCount, subjectCount, promotionCount]
+      properties:
+        bookCount: { type: integer }
+        classCount: { type: integer }
+        subjectCount: { type: integer }
+        promotionCount: { type: integer }
+    CartLine:
+      type: object
+      required: [book, quantity, lineTotal]
+      properties:
+        book: { $ref: "#/components/schemas/Book" }
+        quantity: { type: integer }
+        lineTotal: { type: number }
+    Cart:
+      type: object
+      required: [items, itemCount, subtotal]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CartLine" }
+        itemCount: { type: integer }
+        subtotal: { type: number }
+    CartItemInput:
+      type: object
+      required: [bookId, quantity]
+      properties:
+        bookId: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 20 }
+    CartItemUpdate:
+      type: object
+      required: [quantity]
+      properties:
+        quantity: { type: integer, minimum: 1, maximum: 20 }
+    OrderLine:
+      type: object
+      required: [bookId, title, imageUrl, unitPrice, quantity, lineTotal]
+      properties:
+        bookId: { type: string }
+        title: { type: string }
+        imageUrl: { type: string }
+        unitPrice: { type: number }
+        quantity: { type: integer }
+        lineTotal: { type: number }
+    Order:
+      type: object
+      required: [id, status, paymentMethod, items, itemCount, total, customerName, phone, addressLine, city, state, postalCode, createdAt]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [placed, processing, shipped, delivered, cancelled] }
+        paymentMethod: { type: string, enum: [cash_on_delivery] }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderLine" }
+        itemCount: { type: integer }
+        total: { type: number }
+        customerName: { type: string }
+        phone: { type: string }
+        addressLine: { type: string }
+        city: { type: string }
+        state: { type: string }
+        postalCode: { type: string }
+        createdAt: { type: string, format: date-time }
+    CheckoutInput:
+      type: object
+      required: [customerName, phone, addressLine, city, state, postalCode, paymentMethod]
+      properties:
+        customerName: { type: string, minLength: 2 }
+        phone: { type: string, minLength: 10, maxLength: 16 }
+        addressLine: { type: string, minLength: 5 }
+        city: { type: string, minLength: 2 }
+        state: { type: string, minLength: 2 }
+        postalCode: { type: string, minLength: 5, maxLength: 10 }
+        paymentMethod: { type: string, enum: [cash_on_delivery] }
+

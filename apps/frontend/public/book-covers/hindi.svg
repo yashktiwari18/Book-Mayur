@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#713b31"/><stop offset="1" stop-color="#bb624b"/>
+    </linearGradient>
+  </defs>
+  <path fill="#4e2925" d="M22 12h326v456H22z"/>
+  <path fill="url(#bg)" d="M14 6h326v456H14z"/>
+  <path d="M82 258c12-61 44-100 98-121 52 22 83 60 98 121-42 42-75 65-98 72-23-7-56-30-98-72z" fill="#f4dfa9" fill-opacity=".93"/>
+  <path d="M116 256c15-38 37-64 64-77 27 13 49 39 64 77-27 27-48 42-64 46-16-4-37-19-64-46z" fill="#b95642"/>
+  <path d="M180 189v108M136 244h88" stroke="#f4dfa9" stroke-width="4" opacity=".8"/>
+  <circle cx="180" cy="244" r="14" fill="#f4dfa9"/>
+  <path d="M41 386h272" stroke="#f0c981" stroke-width="2" opacity=".7"/>
+  <text x="42" y="63" fill="#f0c981" font-family="Arial,sans-serif" font-size="13" letter-spacing="3">BOOK BAZAAR · STUDY EDITION</text>
+  <text x="42" y="424" fill="#fff8e8" font-family="Georgia,serif" font-size="26" letter-spacing="2">HINDI</text>
+  <text x="42" y="447" fill="#f1dec7" font-family="Arial,sans-serif" font-size="10" letter-spacing="3">BHASHAA · SAHITYA · ABHYAAS</text>
+</svg>

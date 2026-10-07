@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Your Basket - BookBazaar</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Playfair Display for Serif Headlines, Plus Jakarta Sans for UI text -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'bb-bg': '#fbf8f2',
+            'bb-card': '#ffffff',
+            'bb-dark-green': '#244537',
+            'bb-brand-dark': '#1c362b',
+            'bb-accent-rust': '#b55a42',
+            'bb-text-main': '#192621',
+            'bb-text-muted': '#6b7a74',
+            'bb-border': '#ece6dc',
+            'bb-badge-bg': '#e3ece6',
+            'bb-active-green': '#2b6348'
+          },
+          fontFamily: {
+            serif: ['Newsreader', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-layout">
+    body {
+      background-color: #fbf8f2;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Subtle touch active effects */
+    button:active, a:active {
+      opacity: 0.85;
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+    
+    /* Bottom safe space for fixed navigation */
+    .pb-safe-nav {
+      padding-bottom: 5.5rem;
+    }
+  </style>
+</head>
+<body class="bg-bb-bg text-bb-text-main min-h-screen antialiased flex flex-col justify-between selection:bg-bb-badge-bg">
+<!-- BEGIN: MainHeader -->
+<header class="sticky top-0 z-30 bg-[#fbf8f2]/95 backdrop-blur-md px-5 py-3.5 flex items-center justify-between border-b border-[#ece6dc]/60" data-purpose="top-navigation-bar">
+<!-- Brand Logo Group -->
+<div class="flex items-center gap-2.5">
+<!-- Logo Icon (Book mark with open pages) -->
+<div class="w-9 h-9 rounded-lg bg-[#244537] flex items-center justify-center text-white shadow-sm shadow-[#244537]/15">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+<path d="M6 2v20"></path>
+</svg>
+</div>
+<!-- Brand Name -->
+<span class="text-xl font-bold tracking-tight text-[#244537]">book<span class="text-[#b55a42]">bazaar</span></span>
+</div>
+<!-- Header Actions -->
+<div class="flex items-center gap-3">
+<!-- Location Pin Icon -->
+<button aria-label="Select Location" class="w-8 h-8 rounded-full flex items-center justify-center text-[#9c533e] hover:bg-[#ebdccc]/50 transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"></path>
+<circle cx="12" cy="10" r="3"></circle>
+</svg>
+</button>
+<!-- Cart Shopping Bag with Notification Badge -->
+<div class="relative">
+<button aria-label="Shopping Bag" class="w-9 h-9 rounded-xl border border-[#d6cfc5] flex items-center justify-center text-[#244537] bg-white/70">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+<path d="M3 6h18"></path>
+<path d="M16 10a4 4 0 0 1-8 0"></path>
+</svg>
+</button>
+<span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-[#c3563b] text-white text-[10px] font-semibold flex items-center justify-center rounded-full px-1 shadow-sm">1</span>
+</div>
+<!-- User Profile Avatar Pill -->
+<button aria-label="User Profile" class="w-8 h-8 rounded-full bg-[#dbe5dd] text-[#244537] font-serif font-medium text-sm flex items-center justify-center ml-0.5">
+        B
+      </button>
+</div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: MainContent -->
+<main class="flex-1 px-4 pt-5 pb-safe-nav max-w-md mx-auto w-full">
+<!-- Title Section -->
+<div class="mb-5">
+<span class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#b55a42] block mb-1">YOUR BASKET</span>
+<h1 class="text-3xl font-serif text-[#1e342b] tracking-tight font-normal leading-tight">
+        Books in the making.
+      </h1>
+<p class="text-sm text-[#74827c] mt-1">1 book on your list.</p>
+</div>
+<!-- BEGIN: CartItemCard -->
+<article class="bg-white rounded-2xl border border-[#ede7dd] shadow-[0_2px_8px_rgba(0,0,0,0.02)] overflow-hidden mb-5" data-purpose="cart-item">
+<div class="p-4">
+<div class="flex gap-3.5">
+<!-- Book Thumbnail -->
+<div class="w-20 h-28 flex-shrink-0 bg-[#213e31] rounded-lg overflow-hidden shadow-md flex flex-col justify-between p-2 border border-[#2b4c3e] relative text-center">
+<!-- Book Spine/Cover Design -->
+<div class="text-[6px] tracking-wider uppercase text-[#c3ceb8] opacity-80 leading-none">Book Bazaar • Study Edition</div>
+<div class="my-auto flex flex-col items-center justify-center">
+<svg class="w-10 h-10 text-[#d8c386] opacity-90" fill="none" stroke="currentColor" viewbox="0 0 60 60">
+<!-- Mathematical Triangle Geometric Icon -->
+<polygon points="30,8 52,50 8,50" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></polygon>
+<line stroke-linecap="round" stroke-width="2.5" x1="19" x2="41" y1="32" y2="32"></line>
+<circle cx="30" cy="22" fill="#d8c386" r="3"></circle>
+</svg>
+</div>
+<div class="bg-[#182f25] py-0.5 px-1 rounded-sm text-[6.5px] font-bold tracking-widest text-[#d8c386] uppercase">
+              MATHEMATICS
+            </div>
+</div>
+<!-- Book Metadata -->
+<div class="flex-1 flex flex-col justify-between py-0.5">
+<div>
+<div class="flex items-start justify-between">
+<span class="text-[10px] font-bold tracking-wider uppercase text-[#b55a42]">CLASS 6 • Mathematics</span>
+<span class="text-base font-semibold text-[#1e342b] leading-tight font-sans">₹429</span>
+</div>
+<h2 class="text-[15px] font-medium text-[#203129] leading-snug mt-1">Mathematics: New Perspectives</h2>
+<p class="text-xs text-[#788881] mt-0.5">K. Desai</p>
+</div>
+<!-- Quantity Selector & Actions -->
+<div class="flex items-center justify-between pt-2.5 mt-1">
+<!-- Pill Stepper -->
+<div class="flex items-center border border-[#e1dcd3] rounded-lg bg-[#faf8f5] px-2 py-1 gap-4">
+<button aria-label="Decrease quantity" class="text-gray-500 hover:text-gray-800 text-sm font-medium w-4 h-4 flex items-center justify-center" type="button">
+                  −
+                </button>
+<span class="text-xs font-semibold text-[#1e342b]">1</span>
+<button aria-label="Increase quantity" class="text-gray-500 hover:text-gray-800 text-sm font-medium w-4 h-4 flex items-center justify-center" type="button">
+                  +
+                </button>
+</div>
+<!-- Remove Action Button -->
+<button class="text-xs text-[#b55a42] font-medium hover:underline focus:outline-none" type="button">
+                Remove
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Continue Shopping Link -->
+<div class="border-t border-[#f1ebe1] px-4 py-3 bg-[#fdfcf9]">
+<a class="inline-flex items-center text-xs font-semibold text-[#244537] hover:opacity-80 transition-opacity gap-1.5" href="#">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="m12 19-7-7 7-7"></path>
+<path d="M19 12H5"></path>
+</svg>
+          Continue shopping
+        </a>
+</div>
+</article>
+<!-- END: CartItemCard -->
+<!-- BEGIN: OrderSummaryCard -->
+<section class="bg-white rounded-2xl border border-[#ede7dd] shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-5 mb-4" data-purpose="order-summary">
+<span class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#b55a42] block mb-4">ORDER SUMMARY</span>
+<div class="space-y-3 text-sm">
+<!-- Books Subtotal -->
+<div class="flex items-center justify-between">
+<span class="text-[#4e5c56]">Books (1)</span>
+<span class="font-medium text-[#1e342b]">₹429</span>
+</div>
+<!-- Delivery Fee -->
+<div class="flex items-center justify-between">
+<span class="text-[#4e5c56]">Delivery</span>
+<span class="font-semibold text-[#376b53]">On us</span>
+</div>
+<!-- Divider line -->
+<hr class="border-t border-[#f0ebd5] my-2"/>
+<!-- Total -->
+<div class="flex items-center justify-between pt-1">
+<span class="font-bold text-[#1e342b] text-base">Total</span>
+<span class="font-bold font-serif text-2xl text-[#1e342b]">₹429</span>
+</div>
+</div>
+<!-- Checkout Button -->
+<button class="w-full mt-6 bg-[#214234] hover:bg-[#19352a] text-white font-medium text-sm py-3.5 px-4 rounded-xl shadow-sm transition duration-150 flex items-center justify-center gap-2" type="button">
+<span>Proceed to Checkout</span>
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M5 12h14"></path>
+<path d="m12 5 7 7-7 7"></path>
+</svg>
+</button>
+</section>
+<!-- END: OrderSummaryCard -->
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: BottomNavigation -->
+<nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#ede7dc] px-4 py-2" data-purpose="mobile-bottom-tabs">
+<div class="max-w-md mx-auto grid grid-cols-5 text-center">
+<!-- Tab 1: Home -->
+<a class="flex flex-col items-center justify-center text-[#7e8d87] py-1 hover:text-[#214234]" href="#">
+<svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+<polyline points="9 22 9 12 15 12 15 22"></polyline>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Home</span>
+</a>
+<!-- Tab 2: Search -->
+<a class="flex flex-col items-center justify-center text-[#7e8d87] py-1 hover:text-[#214234]" href="#">
+<svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
+<circle cx="11" cy="11" r="8"></circle>
+<path d="m21 21-4.3-4.3"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Search</span>
+</a>
+<!-- Tab 3: Cart (Active Tab) -->
+<a class="flex flex-col items-center justify-center text-[#2b6348] py-1 relative" href="#">
+<div class="relative">
+<svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="8" cy="21" r="1"></circle>
+<circle cx="19" cy="21" r="1"></circle>
+<path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+</svg>
+<span class="absolute -top-1.5 -right-2 bg-[#b84e36] text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">1</span>
+</div>
+<span class="text-[10px] font-bold tracking-tight">Cart</span>
+</a>
+<!-- Tab 4: Orders -->
+<a class="flex flex-col items-center justify-center text-[#7e8d87] py-1 hover:text-[#214234]" href="#">
+<svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
+<rect height="20" rx="2" width="16" x="4" y="2"></rect>
+<line x1="8" x2="16" y1="6" y2="6"></line>
+<line x1="8" x2="16" y1="10" y2="10"></line>
+<line x1="8" x2="12" y1="14" y2="14"></line>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Orders</span>
+</a>
+<!-- Tab 5: Profile -->
+<a class="flex flex-col items-center justify-center text-[#7e8d87] py-1 hover:text-[#214234]" href="#">
+<svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+<circle cx="12" cy="7" r="4"></circle>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Profile</span>
+</a>
+</div>
+</nav>
+<!-- END: BottomNavigation -->
+</body></html>

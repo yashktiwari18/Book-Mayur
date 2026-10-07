@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>BookBazaar - Search &amp; Browse</title>
+<!-- Google Fonts for Editorial Serif and Clean Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,400&amp;family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'cream-bg': '#F7F4EC',
+            'card-bg': '#FFFFFF',
+            'forest-green': '#204A3A',
+            'forest-green-dark': '#18382C',
+            'terracotta': '#B85D43',
+            'soft-sand': '#EFECE2',
+            'border-subtle': '#E7E2D4',
+            'gold-amber': '#C68A36',
+            'charcoal': '#1F2925',
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['"DM Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="base-typography">
+    body {
+      background-color: #F7F4EC;
+      color: #1F2925;
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-serif-heading {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+  </style>
+<style data-purpose="layout-utilities">
+    /* Hide default scrollbars for native app feeling */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center bg-stone-200">
+<!-- Mobile Container simulating iPhone viewport width -->
+<div class="w-full max-w-[420px] min-h-screen bg-cream-bg flex flex-col justify-between relative shadow-2xl overflow-hidden pb-20">
+<!-- BEGIN: TopHeader -->
+<header class="w-full px-5 pt-4 pb-3 flex items-center justify-between bg-cream-bg sticky top-0 z-30" data-purpose="brand-header">
+<!-- Brand Logo & Name -->
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-forest-green flex items-center justify-center text-white shadow-sm">
+<!-- Open Book Icon -->
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M12 6.00019C10.2 4.40019 7.7 3.50019 5 3.50019C3.1 3.50019 1.3 3.90019 0 4.80019V19.8002C1.3 18.9002 3.1 18.5002 5 18.5002C7.7 18.5002 10.2 19.4002 12 21.0002C13.8 19.4002 16.3 18.5002 19 18.5002C20.9 18.5002 22.7 18.9002 24 19.8002V4.80019C22.7 3.90019 20.9 3.50019 19 3.50019C16.3 3.50019 13.8 4.40019 12 6.00019ZM11 18.5002C9.4 17.5002 7.3 17.0002 5 17.0002C3.7 17.0002 2.5 17.2002 1.5 17.7002V6.50019C2.5 6.00019 3.7 5.80019 5 5.80019C7.3 5.80019 9.4 6.30019 11 7.30019V18.5002ZM22.5 17.7002C21.5 17.2002 20.3 17.0002 19 17.0002C16.7 17.0002 14.6 17.5002 13 18.5002V7.30019C14.6 6.30019 16.7 5.80019 19 5.80019C20.3 5.80019 21.5 6.00019 22.5 6.50019V17.7002Z"></path>
+</svg>
+</div>
+<div class="flex items-baseline tracking-tight">
+<span class="font-bold text-lg text-forest-green">book</span>
+<span class="font-bold text-lg text-terracotta">bazaar</span>
+</div>
+</div>
+<!-- Right Header Actions -->
+<div class="flex items-center gap-3.5">
+<!-- Location Pin -->
+<button aria-label="Location" class="text-terracotta hover:opacity-80 transition-opacity" type="button">
+<svg class="w-5 h-5 stroke-current fill-none" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M12 21c-4-4.5-7-8.5-7-12a7 7 0 1114 0c0 3.5-3 7.5-7 12z" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="12" cy="9" r="2.5" stroke-linecap="round" stroke-linejoin="round"></circle>
+</svg>
+</button>
+<!-- Bag with counter badge -->
+<button aria-label="Cart" class="relative p-1 border border-stone-300 rounded-full hover:bg-stone-100 transition-colors" type="button">
+<svg class="w-5 h-5 text-forest-green fill-none stroke-current" stroke-width="1.7" viewbox="0 0 24 24">
+<path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute -top-1 -right-1 bg-terracotta text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center border border-cream-bg">1</span>
+</button>
+<!-- User Avatar Initial 'B' -->
+<div class="w-8 h-8 rounded-full bg-[#E2EBE5] text-forest-green font-medium flex items-center justify-center text-sm">
+          B
+        </div>
+</div>
+</header>
+<!-- END: TopHeader -->
+<!-- BEGIN: MainContent -->
+<main class="px-5 pt-3 flex-1 flex flex-col gap-4">
+<!-- Hero Title Section -->
+<section class="flex flex-col gap-1" data-purpose="search-header">
+<span class="text-[11px] font-bold tracking-wider uppercase text-terracotta">YOUR NEXT GREAT FIND</span>
+<div class="flex items-baseline justify-between">
+<h1 class="font-serif-heading text-[32px] leading-tight text-forest-green tracking-tight">Find the right books.</h1>
+<span class="text-xs px-2.5 py-1 rounded-full border border-stone-300 text-stone-600 bg-cream-bg font-normal">16 titles</span>
+</div>
+<p class="text-[13px] text-stone-500 leading-snug pt-0.5">
+          Search by title, author or subject. Use filters to narrow the list.
+        </p>
+</section>
+<!-- Search Bar -->
+<section class="mt-1" data-purpose="search-input-container">
+<div class="relative flex items-center bg-white rounded-full border border-stone-200 p-1.5 pl-3.5 shadow-sm">
+<svg class="w-5 h-5 text-stone-400 mr-2.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<input class="w-full bg-transparent border-none p-0 text-xs sm:text-sm text-stone-700 placeholder-stone-400 focus:ring-0 focus:outline-none" placeholder='Try "Mathematics" or an author name' type="text"/>
+<button class="bg-forest-green text-white text-xs font-medium px-3.5 py-2 rounded-full flex items-center gap-1.5 shrink-0 hover:bg-forest-green-dark transition-colors">
+<span>Search</span>
+<svg class="w-3.5 h-3.5 stroke-current" fill="none" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</section>
+<!-- Filter Controls -->
+<section class="flex flex-col gap-2 mt-1" data-purpose="filters">
+<div class="flex items-center gap-1.5 text-stone-500 text-[11px] font-semibold tracking-wider uppercase">
+<svg class="w-3.5 h-3.5 stroke-current" fill="none" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 4h18M6 12h12M10 20h4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>FILTER BY</span>
+</div>
+<div class="flex items-center gap-2">
+<!-- Class Selector -->
+<div class="relative flex-1">
+<button class="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-left text-xs font-medium text-stone-700 flex items-center justify-between shadow-xs">
+<span>All classes</span>
+<svg class="w-4 h-4 text-stone-400 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Subject Selector -->
+<div class="relative flex-1">
+<button class="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-left text-xs font-medium text-stone-700 flex items-center justify-between shadow-xs">
+<span>All subjects</span>
+<svg class="w-4 h-4 text-stone-400 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Clear Filters Button -->
+<button class="text-terracotta text-xs font-medium hover:underline px-1 whitespace-nowrap">
+            Clear filters
+          </button>
+</div>
+</section>
+<!-- Book List Container -->
+<section class="flex flex-col gap-3 mt-1 pb-4" data-purpose="book-results">
+<!-- Book Card 1 -->
+<article class="bg-white rounded-2xl p-3 border border-stone-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex gap-3.5 relative">
+<!-- Cover Graphic Preview -->
+<div class="w-[98px] h-[132px] rounded-lg bg-[#204A3A] shrink-0 relative overflow-hidden flex flex-col justify-between p-2 text-amber-100 select-none shadow-sm">
+<!-- Top Badges inside cover -->
+<div class="flex justify-between items-start z-10">
+<span class="bg-[#F2E8D5] text-stone-800 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">New</span>
+<div class="w-5 h-5 rounded-full bg-white/20 backdrop-blur-xs flex items-center justify-center">
+<svg class="w-3 h-3 text-stone-700 stroke-current" fill="none" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+<!-- Stylized Compass / Triangle illustration -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-90">
+<div class="relative w-12 h-14 border-t-0 border-l-[2px] border-r-[2px] border-[#DEB887] flex items-center justify-center" style="clip-path: polygon(50% 0%, 0% 100%, 100% 100%); background: transparent; border-bottom: 2px solid #DEB887;">
+<div class="w-8 h-[2px] bg-[#DEB887] mt-3"></div>
+</div>
+<div class="w-2 h-2 rounded-full bg-[#DEB887] mt-1.5"></div>
+</div>
+<!-- Cover Footer Typography -->
+<div class="z-10 text-center border-t border-[#DEB887]/40 pt-1">
+<div class="text-[7.5px] font-bold tracking-widest uppercase text-white">MATHEMATICS</div>
+<div class="text-[4.5px] text-stone-300 tracking-tight">THINK • EXPLORE • DISCOVER</div>
+</div>
+</div>
+<!-- Book Information -->
+<div class="flex-1 flex flex-col justify-between py-0.5">
+<div>
+<!-- Category header tags -->
+<div class="flex items-center justify-between text-[10px] font-bold tracking-wider uppercase text-stone-400">
+<span>CLASS 1</span>
+<span>MATHEMATICS</span>
+</div>
+<!-- Title & Author -->
+<h2 class="text-sm font-semibold text-stone-900 mt-1 leading-snug">Numbers Around Us</h2>
+<p class="text-xs text-stone-500 mt-1">A. Sharma</p>
+<!-- Rating & Stock Badge -->
+<div class="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-gold-amber">
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 20 20">
+<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+</svg>
+<span>4.8</span>
+<span class="text-stone-300">•</span>
+<span class="text-stone-500 font-normal">In stock</span>
+</div>
+</div>
+<!-- Price & Action Button -->
+<div class="flex items-center justify-between pt-2 border-t border-stone-100">
+<div class="flex items-baseline gap-1.5">
+<span class="text-base font-bold text-stone-900">₹279</span>
+<span class="text-xs text-stone-400 line-through">₹349</span>
+</div>
+<button aria-label="Add to Cart" class="w-8 h-8 rounded-lg bg-forest-green hover:bg-forest-green-dark text-white flex items-center justify-center transition-colors shadow-xs">
+<svg class="w-4 h-4 stroke-current" fill="none" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</article>
+<!-- Book Card 2 (Partially visible as in reference) -->
+<article class="bg-white rounded-2xl p-3 border border-stone-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex gap-3.5 relative opacity-95">
+<!-- Cover Graphic Preview -->
+<div class="w-[98px] h-[132px] rounded-lg bg-[#99533C] shrink-0 relative overflow-hidden flex flex-col justify-between p-2 text-amber-100 select-none shadow-sm">
+<!-- Top Badges inside cover -->
+<div class="flex justify-between items-start z-10">
+<span class="bg-[#F2E8D5] text-stone-800 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">Bestseller</span>
+<div class="w-5 h-5 rounded-full bg-white/20 backdrop-blur-xs flex items-center justify-center">
+<svg class="w-3 h-3 text-stone-700 stroke-current" fill="none" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+<!-- Stylized Open Book Illustration -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-80">
+<div class="w-12 h-8 rounded-b-xl border-b-2 border-l-2 border-r-2 border-[#E9C39B] bg-[#80402C]/40"></div>
+</div>
+<!-- Cover Footer Typography -->
+<div class="z-10 text-center border-t border-[#E9C39B]/30 pt-1">
+<div class="text-[7.5px] font-bold tracking-widest uppercase text-white">ENGLISH</div>
+<div class="text-[4.5px] text-stone-300 tracking-tight">STORIES &amp; ESSENTIALS</div>
+</div>
+</div>
+<!-- Book Information -->
+<div class="flex-1 flex flex-col justify-between py-0.5">
+<div>
+<!-- Category header tags -->
+<div class="flex items-center justify-between text-[10px] font-bold tracking-wider uppercase text-stone-400">
+<span>CLASS 2</span>
+<span>ENGLISH</span>
+</div>
+<!-- Title & Author -->
+<h2 class="text-sm font-semibold text-stone-900 mt-1 leading-snug">Little Words, Big Stories</h2>
+<p class="text-xs text-stone-500 mt-1">M. K. Patel</p>
+<!-- Rating & Stock Badge -->
+<div class="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-gold-amber">
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 20 20">
+<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+</svg>
+<span>4.9</span>
+<span class="text-stone-300">•</span>
+<span class="text-stone-500 font-normal">In stock</span>
+</div>
+</div>
+<!-- Price & Action Button -->
+<div class="flex items-center justify-between pt-2 border-t border-stone-100">
+<div class="flex items-baseline gap-1.5">
+<span class="text-base font-bold text-stone-900">₹245</span>
+<span class="text-xs text-stone-400 line-through">₹310</span>
+</div>
+<button aria-label="Add to Cart" class="w-8 h-8 rounded-lg bg-forest-green hover:bg-forest-green-dark text-white flex items-center justify-center transition-colors shadow-xs">
+<svg class="w-4 h-4 stroke-current" fill="none" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: BottomNavigation -->
+<nav class="absolute bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-stone-200/80 px-4 py-2 flex items-center justify-between z-40" data-purpose="mobile-bottom-nav">
+<!-- Home tab -->
+<a class="flex flex-col items-center gap-1 text-stone-400 hover:text-forest-green flex-1" href="#">
+<svg class="w-5 h-5 stroke-current" fill="none" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium leading-none">Home</span>
+</a>
+<!-- Search tab (Active) -->
+<a class="flex flex-col items-center gap-1 text-forest-green flex-1 font-semibold" href="#">
+<svg class="w-5 h-5 stroke-current" fill="none" stroke-width="2.4" viewbox="0 0 24 24">
+<path d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] leading-none">Search</span>
+</a>
+<!-- Cart tab with badge -->
+<a class="flex flex-col items-center gap-1 text-stone-400 hover:text-forest-green flex-1 relative" href="#">
+<div class="relative">
+<svg class="w-5 h-5 stroke-current" fill="none" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute -top-1.5 -right-2 bg-terracotta text-white font-bold text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center">1</span>
+</div>
+<span class="text-[10px] font-medium leading-none">Cart</span>
+</a>
+<!-- Orders tab -->
+<a class="flex flex-col items-center gap-1 text-stone-400 hover:text-forest-green flex-1" href="#">
+<svg class="w-5 h-5 stroke-current" fill="none" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium leading-none">Orders</span>
+</a>
+<!-- Profile tab -->
+<a class="flex flex-col items-center gap-1 text-stone-400 hover:text-forest-green flex-1" href="#">
+<svg class="w-5 h-5 stroke-current" fill="none" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium leading-none">Profile</span>
+</a>
+</nav>
+<!-- END: BottomNavigation -->
+</div>
+</body></html>
