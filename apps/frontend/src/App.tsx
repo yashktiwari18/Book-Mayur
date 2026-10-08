@@ -586,7 +586,7 @@ function ShopPage() {
   const [added, setAdded] = useState<string | null>(null);
   const [addingBundle, setAddingBundle] = useState<string | null>(null);
   const { user } = useSafeUser();
-  const addBook = (book: Book) => addMutation.mutate({ data: { bookId: book.id, quantity: 1 } }, {
+  const addBook = (book: Book, quantity: number = 1) => addMutation.mutate({ data: { bookId: book.id, quantity } }, {
     onSuccess: () => { setAdded(book.id); void cache.invalidateQueries({ queryKey: getGetCartQueryKey() }); window.setTimeout(() => setAdded(null), 1300); },
   });
   const addBundle = async (bundleKey: string, bundleBooks: Book[], qty: number = 1) => {
@@ -622,7 +622,7 @@ function ShopPage() {
     <SubjectBundles books={books.data || []} addBundle={addBundle} addingBundle={addingBundle} />
     <section className="books-section"><div className="section-head"><div><span className="eyebrow">{classLevel ? `CLASS ${classLevel}` : subject || 'HAND-PICKED FOR THE CLASSROOM'}</span><h2>{subject ? `${subject} favourites` : classLevel ? `Books for Class ${classLevel}` : 'Popular this week'}</h2></div><Link href="/search" className="text-link">See all titles <ArrowRight size={15} /></Link></div>
       {addMutation.isError && <div className="inline-error" role="alert">We couldnâ€™t add that title just now. Please try once more.</div>}
-      {!books.data?.length ? <EmptyState title="No titles in this corner yet." text="Try another class or subject to find your books." action="Browse all books" /> : <div className="book-grid">{books.data.map((book) => <BookCard key={book.id} book={book} add={() => addBook(book)} adding={addMutation.isPending && addMutation.variables?.data.bookId === book.id} added={added === book.id} />)}</div>}
+      {!books.data?.length ? <EmptyState title="No titles in this corner yet." text="Try another class or subject to find your books." action="Browse all books" /> : <div className="book-grid">{books.data.map((book) => <BookCard key={book.id} book={book} add={(qty = 1) => addBook(book, qty)} adding={addMutation.isPending && addMutation.variables?.data.bookId === book.id} added={added === book.id} />)}</div>}
       <div className="collection-note"><span className="collection-mark"><BookOpen size={22} /></span><div><b>Every book has a place on the list.</b><small>{summary.data?.bookCount ?? 'Hundreds of'} carefully selected titles, ready for the new term.</small></div><Link href="/search" className="round-arrow" aria-label="Browse collection"><ArrowRight size={17} /></Link></div>
     </section>
   </AppShell>;
@@ -673,10 +673,10 @@ function SubjectBundles({
           const unitTotal = items.reduce((sum, book) => sum + book.price, 0);
           const total = unitTotal * qty;
 
-          const updateQty = (delta: number) => {
+          const setQtyDirect = (val: number) => {
             setQuantities((prev) => ({
               ...prev,
-              [key]: Math.max(1, (prev[key] || 1) + delta),
+              [key]: Math.max(1, Math.min(999, isNaN(val) ? 1 : val)),
             }));
           };
 
@@ -692,15 +692,16 @@ function SubjectBundles({
               </div>
               <div className="bundle-qty-row">
                 <span className="bundle-qty-label">{lang === 'hi' ? 'मात्रा:' : 'Qty:'}</span>
-                <div className="quantity-control bundle-qty-picker">
-                  <button type="button" onClick={() => updateQty(-1)} disabled={qty <= 1} aria-label="Decrease bundle quantity">
-                    <Minus size={13} />
-                  </button>
-                  <span>{qty}</span>
-                  <button type="button" onClick={() => updateQty(1)} aria-label="Increase bundle quantity">
-                    <Plus size={13} />
-                  </button>
-                </div>
+                <input
+                  type="number"
+                  className="qty-number-input bundle-qty-input"
+                  min={1}
+                  max={999}
+                  value={qty}
+                  aria-label="Bundle quantity"
+                  onChange={(e) => setQtyDirect(parseInt(e.target.value, 10))}
+                  onFocus={(e) => e.target.select()}
+                />
               </div>
               <div className="bundle-buy">
                 <div>
@@ -727,10 +728,11 @@ function SubjectBundles({
   );
 }
 
-function BookCard({ book, add, adding, added }: { book: Book; add: () => void; adding?: boolean; added?: boolean }) {
+function BookCard({ book, add, adding, added }: { book: Book; add: (qty?: number) => void; adding?: boolean; added?: boolean }) {
+  const [qty, setQty] = useState(1);
   return <article className="book-card" data-testid={`card-book-${book.id}`}>
     <div className="book-art"><img src={book.imageUrl || '/books-editorial.jpg'} alt={book.title} loading="lazy" onError={(event) => { event.currentTarget.src = '/books-editorial.jpg'; }} />{book.badge && <span className="book-badge">{book.badge}</span>}<button className="favorite-btn" aria-label={`Save ${book.title}`} onClick={(event) => { event.currentTarget.classList.toggle('hearted'); }} data-testid={`button-save-${book.id}`}><Heart size={16} /></button></div>
-    <div className="book-info"><div className="book-meta"><span>CLASS {book.classLevel}</span><span>{book.subject}</span></div><h3>{book.title}</h3><p>{book.author}</p><div className="book-rating"><Star size={13} fill="currentColor" /><b>{book.rating?.toFixed(1) ?? '4.8'}</b><span>Â·</span><span>{book.inStock ? 'In stock' : 'Available soon'}</span></div><div className="book-buy"><div><b>{money(book.price)}</b>{book.originalPrice > book.price && <del>{money(book.originalPrice)}</del>}</div><button className={`add-button ${added ? 'added' : ''}`} onClick={add} disabled={!book.inStock || adding} data-testid={`button-add-${book.id}`} aria-label={`Add ${book.title} to cart`}>{adding ? <LoaderCircle size={17} className="spin" /> : added ? <Check size={17} /> : <Plus size={18} />}</button></div></div>
+    <div className="book-info"><div className="book-meta"><span>CLASS {book.classLevel}</span><span>{book.subject}</span></div><h3>{book.title}</h3><p>{book.author}</p><div className="book-rating"><Star size={13} fill="currentColor" /><b>{book.rating?.toFixed(1) ?? '4.8'}</b><span>Â·</span><span>{book.inStock ? 'In stock' : 'Available soon'}</span></div><div className="book-buy"><div><b>{money(book.price * qty)}</b>{book.originalPrice > book.price && <del>{money(book.originalPrice * qty)}</del>}</div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><input type="number" className="qty-number-input bundle-qty-input" min={1} max={999} value={qty} onChange={(e) => setQty(Math.max(1, Math.min(999, isNaN(parseInt(e.target.value)) ? 1 : parseInt(e.target.value))))} onFocus={(e) => e.target.select()} style={{ width: '45px', height: '36px', padding: '0 4px', borderRadius: '8px', border: '1px solid #d8d1c1', background: '#fffdf7', color: '#284336', textAlign: 'center', fontSize: '14px', fontWeight: '500' }} aria-label="Quantity" /><button className={`add-button ${added ? 'added' : ''}`} onClick={() => add(qty)} disabled={!book.inStock || adding} data-testid={`button-add-${book.id}`} aria-label={`Add ${book.title} to cart`}>{adding ? <LoaderCircle size={17} className="spin" /> : added ? <Check size={17} /> : <Plus size={18} />}</button></div></div></div>
   </article>;
 }
 
@@ -752,7 +754,7 @@ function SearchPage() {
     <form className="search-form" onSubmit={submitSearch}><Search size={20} /><input aria-label="Search books" placeholder="Try â€˜Mathematicsâ€™ or an author name" value={q} onChange={(e) => setQ(e.target.value)} data-testid="input-search-books" /><button type="submit">Search <ArrowRight size={16} /></button></form>
     <div className="filter-row"><span className="filter-label"><SlidersHorizontal size={15} /> FILTER BY</span><select value={classLevel || ''} onChange={(e) => setClassLevel(e.target.value ? Number(e.target.value) : undefined)} aria-label="Filter by class" data-testid="select-class"><option value="">All classes</option>{filters.data?.classes?.map((grade) => <option key={grade.level} value={grade.level}>{grade.label}</option>)}</select><select value={subject} onChange={(e) => setSubject(e.target.value)} aria-label="Filter by subject" data-testid="select-subject"><option value="">All subjects</option>{filters.data?.subjects?.map((s) => <option value={s.name} key={s.name}>{s.name}</option>)}</select><button className="clear-filters" onClick={() => { setClassLevel(undefined); setSubject(''); setQ(''); }} type="button">Clear filters</button></div>
     {addMutation.isError && <div className="inline-error" role="alert">We couldnâ€™t add that title just now. Please try once more.</div>}
-    {books.isLoading ? <Busy label="Searching the shelves" /> : books.isError ? <ErrorState retry={() => { void books.refetch(); }} /> : books.data?.length ? <div className="book-grid search-grid">{books.data.map((book) => <BookCard key={book.id} book={book} add={() => addMutation.mutate({ data: { bookId: book.id, quantity: 1 } }, { onSuccess: () => { void cache.invalidateQueries({ queryKey: getGetCartQueryKey() }); } })} adding={addMutation.isPending && addMutation.variables?.data.bookId === book.id} />)}</div> : <EmptyState title="Nothing on this shelf." text="Try a shorter search or clear a filter to see more books." action="See all books" />}
+    {books.isLoading ? <Busy label="Searching the shelves" /> : books.isError ? <ErrorState retry={() => { void books.refetch(); }} /> : books.data?.length ? <div className="book-grid search-grid">{books.data.map((book) => <BookCard key={book.id} book={book} add={(qty = 1) => addMutation.mutate({ data: { bookId: book.id, quantity: qty } }, { onSuccess: () => { void cache.invalidateQueries({ queryKey: getGetCartQueryKey() }); } })} adding={addMutation.isPending && addMutation.variables?.data.bookId === book.id} />)}</div> : <EmptyState title="Nothing on this shelf." text="Try a shorter search or clear a filter to see more books." action="See all books" />}
   </AppShell>;
 }
 
@@ -776,7 +778,7 @@ function CartPage() {
   if (cartQuery.isError) return <AppShell active="/cart"><ErrorState retry={() => { void cartQuery.refetch(); }} /></AppShell>;
   if (placedOrder) return <AppShell active="/cart"><div className="order-success"><span className="success-check"><Check size={27} /></span><span className="eyebrow">ORDER CONFIRMED</span><h1>Thatâ€™s a wrap.<br /><em>See you at the door.</em></h1><p>Your books are on their way. Weâ€™ll collect payment when they arrive.</p><div className="success-order">ORDER <b>#{placedOrder.slice(-8).toUpperCase()}</b></div><Link className="button button-primary" href={`/orders/${placedOrder}`}>Track your order <ArrowRight size={16} /></Link><Link className="text-link" href="/shop">Keep browsing</Link></div></AppShell>;
   if (!cart?.items?.length) return <AppShell active="/cart"><PageHeading kicker="YOUR BASKET" title="A little room for books." text="The good stuff you add will appear here." /><EmptyState title="Your basket is waiting." text="Start with a class or subject and build your school list." action="Browse the shelves" /></AppShell>;
-  return <AppShell active="/cart"><PageHeading kicker="YOUR BASKET" title="Books in the making." text={`${cart.itemCount} ${cart.itemCount === 1 ? 'book' : 'books'} on your list.`} /><div className="cart-layout"><div className="cart-lines">{(update.isError || remove.isError) && <div className="inline-error" role="alert">Your basket could not be updated. Please try again.</div>}{cart.items.map(({ book, quantity, lineTotal }) => <article className="cart-line" key={book.id}><div className="cart-book-cover"><img src={book.imageUrl || '/books-editorial.jpg'} alt={book.title} /></div><div className="cart-book-details"><div className="eyebrow">CLASS {book.classLevel} Â· {book.subject}</div><h3>{book.title}</h3><p>{book.author}</p><div className="quantity-control"><button aria-label="Decrease quantity" onClick={() => quantity > 1 ? updateQty(book.id, quantity - 1) : removeItem(book.id)} data-testid={`button-quantity-minus-${book.id}`}><Minus size={14} /></button><span>{quantity}</span><button aria-label="Increase quantity" onClick={() => updateQty(book.id, Math.min(20, quantity + 1))} data-testid={`button-quantity-plus-${book.id}`}><Plus size={14} /></button></div></div><div className="cart-line-end"><b>{money(lineTotal)}</b><button className="remove-link" onClick={() => removeItem(book.id)} data-testid={`button-remove-${book.id}`}>Remove</button></div></article>)}
+  return <AppShell active="/cart"><PageHeading kicker="YOUR BASKET" title="Books in the making." text={`${cart.itemCount} ${cart.itemCount === 1 ? 'book' : 'books'} on your list.`} /><div className="cart-layout"><div className="cart-lines">{(update.isError || remove.isError) && <div className="inline-error" role="alert">Your basket could not be updated. Please try again.</div>}{cart.items.map(({ book, quantity, lineTotal }) => <article className="cart-line" key={book.id}><div className="cart-book-cover"><img src={book.imageUrl || '/books-editorial.jpg'} alt={book.title} /></div><div className="cart-book-details"><div className="eyebrow">CLASS {book.classLevel} · {book.subject}</div><h3>{book.title}</h3><p>{book.author}</p><input type="number" className="qty-number-input" min={1} max={20} value={quantity} aria-label={`Quantity for ${book.title}`} data-testid={`input-quantity-${book.id}`} onChange={(e) => { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 20) updateQty(book.id, v); else if (v < 1) removeItem(book.id); }} onFocus={(e) => e.target.select()} /></div><div className="cart-line-end"><b>{money(lineTotal)}</b><button className="remove-link" onClick={() => removeItem(book.id)} data-testid={`button-remove-${book.id}`}>Remove</button></div></article>)}
     <Link href="/shop" className="continue-link"><ArrowLeft size={15} /> Continue shopping</Link></div><aside className="summary-card"><span className="eyebrow">ORDER SUMMARY</span><div className="summary-row"><span>Books ({cart.itemCount})</span><b>{money(cart.subtotal)}</b></div><div className="summary-row"><span>Delivery</span><b className="delivery-included">On us</b></div><div className="summary-total"><span>Total</span><b>{money(cart.subtotal)}</b></div><button className="button button-primary checkout-button" onClick={() => setCheckout(!checkout)} data-testid="button-checkout">{checkout ? 'Checkout details' : 'Proceed to checkout'} <ArrowRight size={16} /></button><div className="payment-note"><ShieldCheck size={16} /> Secure checkout Â· Cash on delivery</div>
       {checkout && <form className="checkout-form" onSubmit={submitCheckout}><h3>Where should we send them?</h3>{(['customerName', 'phone', 'addressLine', 'city', 'state', 'postalCode'] as const).map((name) => <label key={name}>{({ customerName: 'Full name', phone: 'Phone number', addressLine: 'Street address', city: 'City', state: 'State', postalCode: 'Postal code' })[name]}<input required minLength={name === 'customerName' || name === 'city' || name === 'state' ? 2 : name === 'addressLine' ? 5 : name === 'phone' ? 10 : 5} maxLength={name === 'phone' ? 16 : name === 'postalCode' ? 10 : undefined} type={name === 'phone' || name === 'postalCode' ? 'tel' : 'text'} value={form[name]} onChange={(e) => setForm({ ...form, [name]: e.target.value })} data-testid={`input-${name}`} /></label>)}{createOrder.isError && <p className="form-error">We couldnâ€™t place your order. Check your details and try again.</p>}<button className="button button-primary checkout-button" disabled={createOrder.isPending} type="submit">{createOrder.isPending ? 'Placing your orderâ€¦' : `Place order Â· ${money(cart.subtotal)}`}</button></form>}</aside></div></AppShell>;
 }
@@ -902,11 +904,23 @@ function ReturnPage() {
                         <Plus size={18} />
                       </button>
                     ) : (
-                      <div className="quantity-control return-qty-control">
-                        <button onClick={() => updateReturnQty(item.bookId, -1, item.quantity)}><Minus size={14} /></button>
-                        <span>{qty}</span>
-                        <button onClick={() => updateReturnQty(item.bookId, 1, item.quantity)} disabled={qty >= item.quantity}><Plus size={14} /></button>
-                      </div>
+                      <input
+                        type="number"
+                        className="qty-number-input return-qty-input"
+                        min={1}
+                        max={item.quantity}
+                        value={qty}
+                        aria-label={`Return quantity for ${item.title}`}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          if (!isNaN(v) && v >= 1 && v <= item.quantity) {
+                            setReturnCart((prev) => ({ ...prev, [item.bookId]: v }));
+                          } else if (!isNaN(v) && v < 1) {
+                            setReturnCart((prev) => { const c = { ...prev }; delete c[item.bookId]; return c; });
+                          }
+                        }}
+                        onFocus={(e) => e.target.select()}
+                      />
                     )}
                   </div>
                 </div>
