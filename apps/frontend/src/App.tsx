@@ -583,6 +583,9 @@ function ShopPage() {
   const [added, setAdded] = useState<string | null>(null);
   const [addingBundle, setAddingBundle] = useState<string | null>(null);
   const { user } = useSafeUser();
+  const orders = useListOrders({ query: { queryKey: getListOrdersQueryKey() } });
+  const totalPaid = orders.data?.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0) || 0;
+  const totalDue = orders.data?.filter(o => o.status !== 'delivered').reduce((sum, o) => sum + o.total, 0) || 0;
   const addBook = (book: Book, quantity: number = 1) => addMutation.mutate({ data: { bookId: book.id, quantity } }, {
     onSuccess: () => { setAdded(book.id); void cache.invalidateQueries({ queryKey: getGetCartQueryKey() }); window.setTimeout(() => setAdded(null), 1300); },
   });
@@ -602,11 +605,16 @@ function ShopPage() {
   if (allFiltersError) return <AppShell active="/shop"><ErrorState retry={() => { void filters.refetch(); void promotions.refetch(); void books.refetch(); }} /></AppShell>;
   return <AppShell active="/shop">
     <div className="welcome-line"><span>GOOD MORNING, {(user?.firstName || 'FAMILY').toUpperCase()}</span><span className="secure-note"><ShieldCheck size={15} /> A better school year starts here</span></div>
-    <section className="shop-hero">
-      <div className="shop-hero-copy"><span className="eyebrow">READY WHEN THE BELL RINGS</span><h1>Letâ€™s get your<br /><em>school list</em> sorted.</h1><p>Books, bundles and the little details that make a big school year.</p><Link className="button button-cream" href="/search">Browse all books <ArrowRight size={16} /></Link></div>
-      <div className="shop-hero-photo"><img src="/books-editorial.jpg" alt="Colorful school books and stationery" /><div className="hero-photo-caption"><span>THE NEW TERM EDIT</span><b>Big ideas<br />begin here.</b></div><span className="photo-index">01 / 03</span></div>
-      <div className="hero-side-note"><span>BOOKS FOR</span><b>Class<br />1â€”12</b><GraduationCap size={20} /></div>
-    </section>
+    <Link href="/orders" className="overall-payment-summary" style={{ display: 'flex', gap: '12px', marginBottom: '24px', textDecoration: 'none' }}>
+      <div className="payment-card" style={{ flex: 1, padding: '16px', background: '#fbf8ef', borderRadius: '12px', border: '1px solid #d8d1c1' }}>
+        <span style={{ fontSize: '13px', color: '#718076', display: 'block', marginBottom: '6px' }}>Total Paid Amount</span>
+        <b style={{ color: '#285b45', fontSize: '20px' }}>{money(totalPaid)}</b>
+      </div>
+      <div className="payment-card" style={{ flex: 1, padding: '16px', background: '#fff3ef', borderRadius: '12px', border: '1px solid #f1d4ca' }}>
+        <span style={{ fontSize: '13px', color: '#9b3f35', display: 'block', marginBottom: '6px' }}>Total Due Amount</span>
+        <b style={{ color: '#b54d3f', fontSize: '20px' }}>{money(totalDue)}</b>
+      </div>
+    </Link>
     <section className="promotions-section">
       <div className="section-head"><div><span className="eyebrow">A GOOD DEAL ON A GREAT START</span><h2>Offers for your book list</h2></div><div className="scroll-hint">SWIPE TO EXPLORE <ArrowRight size={14} /></div></div>
       {promotions.data?.length ? <div className="promo-carousel">{promotions.data.map((promo, index) => <PromotionCard key={promo.id} promo={promo} index={index} />)}</div> : <div className="quiet-empty">New school-year offers are on their way.</div>}
@@ -688,17 +696,26 @@ function SubjectBundles({
                 {items.slice(0, 3).map((book) => <span key={book.id}>{book.title}</span>)}
               </div>
               <div className="bundle-qty-row">
-                <span className="bundle-qty-label">{lang === 'hi' ? 'मात्रा:' : 'Qty:'}</span>
-                <input
-                  type="number"
-                  className="qty-number-input bundle-qty-input"
-                  min={1}
-                  max={999}
-                  value={qty}
-                  aria-label="Bundle quantity"
-                  onChange={(e) => setQtyDirect(parseInt(e.target.value, 10))}
-                  onFocus={(e) => e.target.select()}
-                />
+                <span className="bundle-qty-label">{lang === 'hi' ? 'मात्रा:' : 'Set:'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d8d1c1', borderRadius: '8px', background: '#fffdf7', overflow: 'hidden' }}>
+                  <button type="button" onClick={() => setQtyDirect(qty - 1)} style={{ width: '32px', height: '36px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#284336' }} aria-label="Decrease quantity">
+                    <Minus size={14} />
+                  </button>
+                  <input
+                    type="number"
+                    className="qty-number-input bundle-qty-input"
+                    min={1}
+                    max={999}
+                    value={qty}
+                    aria-label="Bundle quantity"
+                    onChange={(e) => setQtyDirect(parseInt(e.target.value, 10))}
+                    onFocus={(e) => e.target.select()}
+                    style={{ border: 'none', width: '40px', textAlign: 'center', padding: 0, height: '36px', background: 'transparent', outline: 'none' }}
+                  />
+                  <button type="button" onClick={() => setQtyDirect(qty + 1)} style={{ width: '32px', height: '36px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#284336' }} aria-label="Increase quantity">
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
               <div className="bundle-buy">
                 <div>
@@ -1069,7 +1086,7 @@ function PrintInvoiceModal({ order, onClose }: { order: Order; onClose: () => vo
                 <th>Book Title</th>
                 <th>Price</th>
                 <th>Discount</th>
-                <th>Qty</th>
+                <th>Set</th>
                 <th className="text-right">Line Total</th>
               </tr>
             </thead>
@@ -1127,6 +1144,9 @@ function OrdersPage() {
   const orders = useListOrders({ query: { queryKey: getListOrdersQueryKey() } });
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
 
+  const totalPaid = orders.data?.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0) || 0;
+  const totalDue = orders.data?.filter(o => o.status !== 'delivered').reduce((sum, o) => sum + o.total, 0) || 0;
+
   return (
     <AppShell active="/orders">
       <PageHeading kicker="THE JOURNEY SO FAR" title="Your orders." text="All the books you’ve brought home, in one place." />
@@ -1135,11 +1155,23 @@ function OrdersPage() {
       ) : orders.isError ? (
         <ErrorState retry={() => { void orders.refetch(); }} />
       ) : orders.data?.length ? (
-        <div className="orders-list">
-          {orders.data.map((order) => (
-            <OrderCard order={order} key={order.id} onPrint={(o) => setPrintOrder(o)} />
-          ))}
-        </div>
+        <>
+          <div className="overall-payment-summary" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+            <div className="payment-card" style={{ flex: 1, padding: '16px', background: '#fbf8ef', borderRadius: '12px', border: '1px solid #d8d1c1' }}>
+              <span style={{ fontSize: '13px', color: '#718076', display: 'block', marginBottom: '6px' }}>Total Paid Amount</span>
+              <b style={{ color: '#285b45', fontSize: '20px' }}>{money(totalPaid)}</b>
+            </div>
+            <div className="payment-card" style={{ flex: 1, padding: '16px', background: '#fff3ef', borderRadius: '12px', border: '1px solid #f1d4ca' }}>
+              <span style={{ fontSize: '13px', color: '#9b3f35', display: 'block', marginBottom: '6px' }}>Total Due Amount</span>
+              <b style={{ color: '#b54d3f', fontSize: '20px' }}>{money(totalDue)}</b>
+            </div>
+          </div>
+          <div className="orders-list">
+            {orders.data.map((order) => (
+              <OrderCard order={order} key={order.id} onPrint={(o) => setPrintOrder(o)} />
+            ))}
+          </div>
+        </>
       ) : (
         <EmptyState title="Your story starts with a book." text="Once you place an order, you’ll find updates and delivery details here." action="Explore the books" to="/shop" />
       )}
@@ -1358,7 +1390,10 @@ function OrderDetailPage() {
             <div className="detail-item" key={item.bookId}>
               <img src={item.imageUrl || '/books-editorial.jpg'} alt={item.title} />
               <div>
-                <b>{item.title}</b>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <b>{item.title}</b>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: isDelivered ? '#e6f3ec' : '#fef2e8', color: isDelivered ? '#285b45' : '#b54d3f', fontWeight: 600, letterSpacing: '0.02em' }}>{isDelivered ? 'PAID' : 'DUE'}</span>
+                </div>
                 <small>{item.quantity} × {money(item.unitPrice)}</small>
                 {returnedItems.has(item.bookId) && (
                   <span className="return-status-pill">Return requested</span>
@@ -1403,6 +1438,16 @@ function OrderDetailPage() {
         <span className="eyebrow">PAYMENT</span>
         <p>Cash on delivery<br />{order.phone}</p>
         <div className="summary-total"><span>Order total</span><b>{money(order.total)}</b></div>
+        <div className="payment-cards" style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+          <div className="payment-card" style={{ flex: 1, padding: '12px', background: '#fbf8ef', borderRadius: '8px', border: '1px solid #d8d1c1' }}>
+            <span style={{ fontSize: '12px', color: '#718076', display: 'block', marginBottom: '4px' }}>Paid Amount</span>
+            <b style={{ color: '#285b45' }}>{money(isDelivered ? order.total : 0)}</b>
+          </div>
+          <div className="payment-card" style={{ flex: 1, padding: '12px', background: '#fff3ef', borderRadius: '8px', border: '1px solid #f1d4ca' }}>
+            <span style={{ fontSize: '12px', color: '#9b3f35', display: 'block', marginBottom: '4px' }}>Due Amount</span>
+            <b style={{ color: '#b54d3f' }}>{money(isDelivered ? 0 : order.total)}</b>
+          </div>
+        </div>
       </aside>
     </div>
     {returnItem && <ReturnModal item={returnItem} onClose={handleReturnClose} />}
