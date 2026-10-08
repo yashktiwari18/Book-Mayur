@@ -288,25 +288,22 @@ function DemoSignInForm() {
       <button type="submit" className="button button-primary demo-auth-btn">
         {lang === 'hi' ? 'साइन इन करें' : 'Sign In'} <ArrowRight size={16} />
       </button>
-      <div className="demo-auth-footer">
-        <small style={{ color: '#718076' }}>
-          {lang === 'hi' ? 'आपके सप्लायर द्वारा प्रदान किए गए क्रेडेंशियल' : 'Credentials provided by your supplier'}
-        </small>
-      </div>
+
     </form>
   );
 }
 
 function SignInPage() {
   const { isSignedIn } = useSafeAuth();
+  const { lang } = useLanguage();
   if (isSignedIn) return <Redirect to="/shop" />;
 
   return (
     <div className="auth-scene">
       <div className="auth-aside">
         <Brand />
-        <p>All the right books<br />for a year of big ideas.</p>
-        <small>Thoughtfully selected for every classroom, from Class 1 to 12.</small>
+        <p>{lang === 'hi' ? <>आपके सप्लायर द्वारा प्रदान किए<br />गए क्रेडेंशियल।</> : <>Credentials provided by<br />your supplier.</>}</p>
+        <small>{lang === 'hi' ? 'कक्षा 1 से 12 तक के प्रत्येक कक्षा के लिए सोच-समझकर चुना गया।' : 'Thoughtfully selected for every classroom, from Class 1 to 12.'}</small>
       </div>
       {clerkPubKey ? (
         <SignIn routing="path" path={`${basePath}/sign-in`} />
