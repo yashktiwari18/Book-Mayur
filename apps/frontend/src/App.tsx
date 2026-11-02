@@ -520,8 +520,9 @@ function MobileBottomNav({
   return <nav className="bottom-nav" aria-label="Main navigation">
     {items.map(({ href, label, Icon }) => {
       const destination = label === 'Home' && !isSignedIn ? '/' : href;
-      return <Link key={href} href={destination} className={`bottom-link ${active === href ? 'selected' : ''}`} data-testid={`link-nav-${href.slice(1)}`}>
-        <span className="nav-icon-wrap"><Icon size={22} strokeWidth={active === href ? 2.2 : 1.8} />{href === '/cart' && count > 0 && <i>{count}</i>}</span>
+      const isCart = href === '/cart';
+      return <Link key={href} href={destination} className={`bottom-link ${active === href ? 'selected' : ''} ${isCart ? 'cart-nav-link' : ''}`} data-testid={`link-nav-${href.slice(1)}`}>
+        <span className="nav-icon-wrap"><Icon size={isCart ? 27 : 22} strokeWidth={active === href ? 2.2 : (isCart ? 2.2 : 1.8)} />{href === '/cart' && count > 0 && <i>{count}</i>}</span>
         <small>{label}</small>
       </Link>;
     })}
@@ -746,7 +747,18 @@ function BookCard({ book, add, adding, added }: { book: Book; add: (qty?: number
   const [qty, setQty] = useState(1);
   return <article className="book-card" data-testid={`card-book-${book.id}`}>
     <div className="book-art"><img src={book.imageUrl || '/books-editorial.jpg'} alt={book.title} loading="lazy" onError={(event) => { event.currentTarget.src = '/books-editorial.jpg'; }} />{book.badge && <span className="book-badge">{book.badge}</span>}<button className="favorite-btn" aria-label={`Save ${book.title}`} onClick={(event) => { event.currentTarget.classList.toggle('hearted'); }} data-testid={`button-save-${book.id}`}><Heart size={16} /></button></div>
-    <div className="book-info"><div className="book-meta"><span>CLASS {book.classLevel}</span><span>{book.subject}</span></div><h3>{book.title}</h3><p>{book.author}</p><div className="book-rating"><Star size={13} fill="currentColor" /><b>{book.rating?.toFixed(1) ?? '4.8'}</b><span>Â·</span><span>{book.inStock ? 'In stock' : 'Available soon'}</span></div><div className="book-buy"><div><b>{money(book.price * qty)}</b>{book.originalPrice > book.price && <del>{money(book.originalPrice * qty)}</del>}</div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><input type="number" className="qty-number-input bundle-qty-input" min={1} max={999} value={qty} onChange={(e) => setQty(Math.max(1, Math.min(999, isNaN(parseInt(e.target.value)) ? 1 : parseInt(e.target.value))))} onFocus={(e) => e.target.select()} style={{ width: '45px', height: '36px', padding: '0 4px', borderRadius: '8px', border: '1px solid #d8d1c1', background: '#fffdf7', color: '#284336', textAlign: 'center', fontSize: '14px', fontWeight: '500' }} aria-label="Quantity" /><button className={`add-button ${added ? 'added' : ''}`} onClick={() => add(qty)} disabled={!book.inStock || adding} data-testid={`button-add-${book.id}`} aria-label={`Add ${book.title} to cart`}>{adding ? <LoaderCircle size={17} className="spin" /> : added ? <Check size={17} /> : <Plus size={18} />}</button></div></div></div>
+    <div className="book-info"><div className="book-meta"><span>CLASS {book.classLevel}</span><span>{book.subject}</span></div><h3>{book.title}</h3><p>{book.author}</p><div className="book-rating"><Star size={13} fill="currentColor" /><b>{book.rating?.toFixed(1) ?? '4.8'}</b><span>·</span><span>{book.inStock ? 'In stock' : 'Available soon'}</span></div><div className="book-buy"><div><b>{money(book.price * qty)}</b>{book.originalPrice > book.price && <del>{money(book.originalPrice * qty)}</del>}</div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d8d1c1', borderRadius: '8px', background: '#fffdf7', overflow: 'hidden' }}>
+        <button type="button" onClick={() => setQty(Math.max(1, qty - 1))} style={{ width: '32px', height: '36px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#284336' }} aria-label="Decrease quantity">
+          <Minus size={14} />
+        </button>
+        <input type="number" className="qty-number-input bundle-qty-input" min={1} max={999} value={qty} onChange={(e) => setQty(Math.max(1, Math.min(999, isNaN(parseInt(e.target.value)) ? 1 : parseInt(e.target.value))))} onFocus={(e) => e.target.select()} style={{ border: 'none', width: '40px', textAlign: 'center', padding: 0, height: '36px', background: 'transparent', outline: 'none' }} aria-label="Quantity" />
+        <button type="button" onClick={() => setQty(Math.min(999, qty + 1))} style={{ width: '32px', height: '36px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#284336' }} aria-label="Increase quantity">
+          <Plus size={14} />
+        </button>
+      </div>
+      <button className={`add-button ${added ? 'added' : ''}`} onClick={() => add(qty)} disabled={!book.inStock || adding} data-testid={`button-add-${book.id}`} aria-label={`Add ${book.title} to cart`}>{adding ? <LoaderCircle size={17} className="spin" /> : added ? <Check size={17} /> : <Plus size={18} />}</button>
+    </div></div></div>
   </article>;
 }
 
