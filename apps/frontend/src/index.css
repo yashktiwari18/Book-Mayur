@@ -1564,8 +1564,739 @@ img { display: block; max-width: 100%; }
   border-radius: 8px;
 }
 
+/* ==========================================================================
+   PhonePe-Style Payment Statement & Passbook Styles
+   ========================================================================== */
 
+.statement-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
 
+/* Hero Passbook Card */
+.statement-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #16382b 0%, #204d3b 50%, #2b6149 100%);
+  color: #ffffff;
+  padding: 30px 32px 28px;
+  box-shadow: 0 10px 30px rgba(22, 56, 43, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
 
+.statement-hero-card::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(103, 196, 150, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
 
+.statement-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.statement-brand-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c7eedb;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.statement-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.statement-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(6px);
+  transition: all 0.2s ease;
+}
+
+.statement-hero-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+}
+
+.statement-hero-main {
+  margin-bottom: 24px;
+}
+
+.statement-hero-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9cd4ba;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.statement-hero-amount {
+  font-size: 40px;
+  font-weight: 800;
+  color: #ffffff;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.statement-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.statement-stat-box {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.statement-stat-box span {
+  font-size: 11px;
+  color: #b3dac6;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.statement-stat-box b {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Toolbar & Filters */
+.statement-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.statement-search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.statement-search-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.statement-search-input-wrap svg {
+  position: absolute;
+  left: 14px;
+  color: #798a7f;
+  pointer-events: none;
+}
+
+.statement-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 42px;
+  border-radius: 12px;
+  border: 1.5px solid #dfd8cb;
+  background: #ffffff;
+  color: #213c2f;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.statement-search-input:focus {
+  border-color: #285b45;
+  box-shadow: 0 0 0 3px rgba(40, 91, 69, 0.10);
+}
+
+.statement-period-select {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1.5px solid #dfd8cb;
+  background: #ffffff;
+  color: #284336;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.statement-period-select:focus {
+  border-color: #285b45;
+}
+
+.statement-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.statement-chip {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid #dcd5c7;
+  background: #fbf9f3;
+  color: #4b6053;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.statement-chip:hover {
+  background: #eee8db;
+  color: #204031;
+}
+
+.statement-chip.active {
+  background: #285b45;
+  color: #ffffff;
+  border-color: #285b45;
+  box-shadow: 0 2px 6px rgba(40, 91, 69, 0.25);
+}
+
+/* Date-Grouped Transaction List */
+.statement-date-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.statement-date-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px;
+  border-bottom: 1px solid #e7e2d6;
+  margin-top: 8px;
+}
+
+.statement-date-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #69786f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statement-date-total {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8c978f;
+}
+
+/* Transaction Card — PhonePe Passbook Style */
+.statement-txn-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid #e6e0d2;
+  border-radius: 16px;
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+
+.statement-txn-card:hover {
+  border-color: #285b45;
+  box-shadow: 0 4px 16px rgba(40, 91, 69, 0.08);
+  transform: translateY(-1px);
+}
+
+.statement-txn-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.statement-txn-icon.icon-upi-phonepe {
+  background: #f1e9fb;
+  color: #5f259f; /* PhonePe signature purple */
+}
+
+.statement-txn-icon.icon-upi-gpay {
+  background: #e8f0fe;
+  color: #1a73e8; /* Google Pay blue */
+}
+
+.statement-txn-icon.icon-card {
+  background: #eef2f6;
+  color: #1e3a5f;
+}
+
+.statement-txn-icon.icon-cod {
+  background: #fef4e9;
+  color: #b25e1a;
+}
+
+.statement-txn-icon.icon-refund {
+  background: #e6f7ec;
+  color: #137333;
+}
+
+.statement-txn-icon-sub {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #285b45;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid #ffffff;
+}
+
+.statement-txn-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.statement-txn-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.statement-txn-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f3629;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statement-mode-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: #f0ece1;
+  color: #4b6053;
+  flex-shrink: 0;
+}
+
+.statement-txn-meta {
+  font-size: 12px;
+  color: #79877e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.statement-txn-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statement-txn-items-preview {
+  font-size: 11px;
+  color: #929d95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 440px;
+}
+
+.statement-txn-end {
+  text-align: right;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.statement-amount-debit {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1a3024;
+  letter-spacing: -0.01em;
+}
+
+.statement-amount-credit {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1b7a42;
+  letter-spacing: -0.01em;
+}
+
+.statement-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statement-status-badge.status-success {
+  background: #e6f6ee;
+  color: #1b7a42;
+}
+
+.statement-status-badge.status-pending {
+  background: #fef5ea;
+  color: #b76b1f;
+}
+
+.statement-status-badge.status-refunded {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+/* PhonePe Style Digital Receipt Modal */
+.phonepe-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(14, 30, 22, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.16s ease;
+}
+
+.phonepe-receipt-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.phonepe-receipt-header {
+  background: linear-gradient(135deg, #1b5e39 0%, #285b45 100%);
+  color: #ffffff;
+  padding: 28px 24px 24px;
+  text-align: center;
+  position: relative;
+}
+
+.phonepe-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 0;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.phonepe-close-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.phonepe-check-circle {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #285b45;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.phonepe-receipt-status {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #bbf0d5;
+  margin-bottom: 2px;
+}
+
+.phonepe-receipt-amount {
+  font-size: 34px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.phonepe-receipt-sub {
+  font-size: 12px;
+  color: #e0f2e8;
+  opacity: 0.9;
+}
+
+.phonepe-receipt-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.phonepe-info-section {
+  background: #fbf9f4;
+  border-radius: 14px;
+  border: 1px solid #eae4d8;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phonepe-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.phonepe-info-row span {
+  color: #718076;
+}
+
+.phonepe-info-row b {
+  color: #1e3629;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.phonepe-copy-btn {
+  background: transparent;
+  border: 0;
+  color: #285b45;
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+}
+
+.phonepe-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phonepe-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e8e2d4;
+  font-size: 12px;
+}
+
+.phonepe-item-row:last-child {
+  border-bottom: none;
+}
+
+.phonepe-item-row span {
+  color: #284336;
+  font-weight: 500;
+}
+
+.phonepe-item-row b {
+  color: #1f3529;
+  font-weight: 700;
+}
+
+.phonepe-receipt-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid #ede8dc;
+  display: flex;
+  gap: 10px;
+}
+
+.phonepe-receipt-footer button {
+  flex: 1;
+}
+
+/* Payment Mode Selector in Cart Checkout */
+.checkout-payment-methods {
+  margin: 14px 0 18px;
+}
+
+.checkout-payment-methods h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #244133;
+  margin-bottom: 8px;
+}
+
+.payment-mode-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.payment-mode-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #ded8cb;
+  background: #fcfbf7;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.payment-mode-pill:hover {
+  background: #f7f4ec;
+  border-color: #285b45;
+}
+
+.payment-mode-pill.selected {
+  border-color: #285b45;
+  background: #eef6f1;
+  box-shadow: 0 2px 8px rgba(40, 91, 69, 0.08);
+}
+
+.payment-mode-pill input[type="radio"] {
+  accent-color: #285b45;
+  width: 16px;
+  height: 16px;
+}
+
+.payment-mode-icon-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  color: #285b45;
+  border: 1px solid #e1dbce;
+  flex-shrink: 0;
+}
+
+.payment-mode-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.payment-mode-label b {
+  font-size: 13px;
+  color: #20392c;
+  font-weight: 700;
+}
+
+.payment-mode-label small {
+  font-size: 10px;
+  color: #79877e;
+}
+
+/* Profile Statement Highlight */
+.statement-highlight-action {
+  background: #f4faf6 !important;
+  border-left: 3px solid #285b45 !important;
+}
+
+.statement-highlight-action:hover {
+  background: #ebf6ee !important;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .statement-hero-card {
+    padding: 22px 20px;
+  }
+  .statement-hero-amount {
+    font-size: 32px;
+  }
+  .statement-txn-card {
+    padding: 14px;
+    gap: 12px;
+  }
+  .statement-txn-items-preview {
+    max-width: 220px;
+  }
+  .statement-hero-stats {
+    grid-template-columns: 1fr;
+  }
+}
 

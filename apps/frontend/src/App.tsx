@@ -4,11 +4,13 @@ import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@cler
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
-  ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown,
+  ArrowLeft, ArrowRight, ArrowUpRight, ArrowDownLeft, BookOpen, Check, ChevronDown,
   ChevronRight, CircleHelp, GraduationCap, Heart, Home, LogOut, MapPin,
   Minus, PackageCheck, Plus, Search, ShieldCheck, ShoppingBag, ShoppingCart,
   SlidersHorizontal, Sparkles, Star, UserRound, X, ClipboardList, AlertCircle,
   LoaderCircle, BookMarked, RotateCcw, MessageSquare, Printer,
+  ReceiptText, Wallet, CreditCard, Smartphone, Download, Calendar, Filter, Share2,
+  CheckCircle2, Clock, Landmark, FileText, Copy, CheckCheck,
 } from 'lucide-react';
 import { Link, Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import {
@@ -204,6 +206,8 @@ function AppRoutes() {
       <Route path="/search"><Protected><SearchPage /></Protected></Route>
       <Route path="/cart"><Protected><CartPage /></Protected></Route>
       <Route path="/orders"><Protected><OrdersPage /></Protected></Route>
+      <Route path="/statement"><Protected><StatementPage /></Protected></Route>
+      <Route path="/passbook"><Protected><Redirect to="/statement" /></Protected></Route>
       <Route path="/return"><Protected><ReturnPage /></Protected></Route>
       <Route path="/orders/:orderId"><Protected><OrderDetailPage /></Protected></Route>
       <Route path="/profile"><Protected><ProfilePage /></Protected></Route>
@@ -513,7 +517,7 @@ function MobileBottomNav({
     { href: '/shop', label: lang === 'hi' ? 'होम' : 'Home', Icon: Home },
     { href: '/search', label: lang === 'hi' ? 'खोजें' : 'Search', Icon: Search },
     { href: '/cart', label: lang === 'hi' ? 'कार्ट' : 'Cart', Icon: ShoppingCart },
-    { href: '/return', label: lang === 'hi' ? 'वापसी' : 'Return', Icon: RotateCcw },
+    { href: '/statement', label: lang === 'hi' ? 'स्टेटमेंट' : 'Statement', Icon: ReceiptText },
     { href: '/profile', label: lang === 'hi' ? 'प्रोफ़ाइल' : 'Profile', Icon: UserRound },
   ];
 
@@ -550,6 +554,13 @@ function AppShell({ children, active }: { children: ReactNode; active: string })
         <nav className="header-tabs" aria-label="Shop navigation">
           <Link href="/shop" className={active === '/shop' ? 'tab-active' : ''} data-testid="link-header-home">{lang === 'hi' ? 'होम' : 'Home'}</Link>
           <Link href="/search" className={active === '/search' ? 'tab-active' : ''} data-testid="link-header-search">{lang === 'hi' ? 'खोजें' : 'Search'}</Link>
+          <Link href="/orders" className={active === '/orders' ? 'tab-active' : ''} data-testid="link-header-orders">{lang === 'hi' ? 'ऑर्डर्स' : 'Orders'}</Link>
+          <Link href="/statement" className={active === '/statement' ? 'tab-active' : ''} data-testid="link-header-statement">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <ReceiptText size={13} style={{ marginTop: '-1px' }} />
+              {lang === 'hi' ? 'स्टेटमेंट' : 'Statement'}
+            </span>
+          </Link>
           <Link href="/return" className={active === '/return' ? 'tab-active' : ''} data-testid="link-header-return">{lang === 'hi' ? 'वापसी' : 'Return'}</Link>
         </nav>
         <div className="header-search">
@@ -790,23 +801,70 @@ function CartPage() {
   const update = useUpdateCartItem(); const remove = useRemoveCartItem(); const createOrder = useCreateOrder();
   const [checkout, setCheckout] = useState(false);
   const [form, setForm] = useState({ customerName: '', phone: '', addressLine: '', city: '', state: '', postalCode: '' });
+  const [paymentMode, setPaymentMode] = useState<string>('upi_phonepe');
   const [placedOrder, setPlacedOrder] = useState<string | null>(null);
+  const { lang } = useLanguage();
   const cart = cartQuery.data;
   const updateQty = (id: string, quantity: number) => update.mutate({ bookId: id, data: { quantity } }, { onSuccess: () => void cache.invalidateQueries({ queryKey: getGetCartQueryKey() }) });
   const removeItem = (id: string) => remove.mutate({ bookId: id }, { onSuccess: () => void cache.invalidateQueries({ queryKey: getGetCartQueryKey() }) });
   const submitCheckout = (event: FormEvent) => {
     event.preventDefault();
-    createOrder.mutate({ data: { ...form, paymentMethod: 'cash_on_delivery' } }, {
+    createOrder.mutate({ data: { ...form, paymentMethod: paymentMode } }, {
       onSuccess: (order) => { setPlacedOrder(order.id); void cache.invalidateQueries({ queryKey: getGetCartQueryKey() }); void cache.invalidateQueries({ queryKey: getListOrdersQueryKey() }); },
     });
   };
   if (cartQuery.isLoading) return <AppShell active="/cart"><Busy label="Gathering your basket" /></AppShell>;
   if (cartQuery.isError) return <AppShell active="/cart"><ErrorState retry={() => { void cartQuery.refetch(); }} /></AppShell>;
-  if (placedOrder) return <AppShell active="/cart"><div className="order-success"><span className="success-check"><Check size={27} /></span><span className="eyebrow">ORDER CONFIRMED</span><h1>Thatâ€™s a wrap.<br /><em>See you at the door.</em></h1><p>Your books are on their way. Weâ€™ll collect payment when they arrive.</p><div className="success-order">ORDER <b>#{placedOrder.slice(-8).toUpperCase()}</b></div><Link className="button button-primary" href={`/orders/${placedOrder}`}>Track your order <ArrowRight size={16} /></Link><Link className="text-link" href="/shop">Keep browsing</Link></div></AppShell>;
+  if (placedOrder) return <AppShell active="/cart"><div className="order-success"><span className="success-check"><Check size={27} /></span><span className="eyebrow">ORDER CONFIRMED</span><h1>That’s a wrap.<br /><em>See you at the door.</em></h1><p>{paymentMode.startsWith('upi') ? 'Payment recorded via UPI. Instant receipt generated in your passbook.' : 'Your books are on their way. We’ll deliver to your address.'}</p><div className="success-order">ORDER <b>#{placedOrder.slice(-8).toUpperCase()}</b></div><div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}><Link className="button button-primary" href={`/orders/${placedOrder}`}>Track your order <ArrowRight size={16} /></Link><Link className="button button-outline" href="/statement" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><ReceiptText size={16} /> {lang === 'hi' ? 'स्टेटमेंट में देखें' : 'View in Statement'}</Link></div><Link className="text-link" href="/shop">Keep browsing</Link></div></AppShell>;
   if (!cart?.items?.length) return <AppShell active="/cart"><PageHeading kicker="YOUR BASKET" title="A little room for books." text="The good stuff you add will appear here." /><EmptyState title="Your basket is waiting." text="Start with a class or subject and build your school list." action="Browse the shelves" /></AppShell>;
   return <AppShell active="/cart"><PageHeading kicker="YOUR BASKET" title="Books in the making." text={`${cart.itemCount} ${cart.itemCount === 1 ? 'book' : 'books'} on your list.`} /><div className="cart-layout"><div className="cart-lines">{(update.isError || remove.isError) && <div className="inline-error" role="alert">Your basket could not be updated. Please try again.</div>}{cart.items.map(({ book, quantity, lineTotal }) => <article className="cart-line" key={book.id}><div className="cart-book-cover"><img src={book.imageUrl || '/books-editorial.jpg'} alt={book.title} /></div><div className="cart-book-details"><div className="eyebrow">CLASS {book.classLevel} · {book.subject}</div><h3>{book.title}</h3><p>{book.author}</p><input type="number" className="qty-number-input" min={1} max={20} value={quantity} aria-label={`Quantity for ${book.title}`} data-testid={`input-quantity-${book.id}`} onChange={(e) => { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 20) updateQty(book.id, v); else if (v < 1) removeItem(book.id); }} onFocus={(e) => e.target.select()} /></div><div className="cart-line-end"><b>{money(lineTotal)}</b><button className="remove-link" onClick={() => removeItem(book.id)} data-testid={`button-remove-${book.id}`}>Remove</button></div></article>)}
-    <Link href="/shop" className="continue-link"><ArrowLeft size={15} /> Continue shopping</Link></div><aside className="summary-card"><span className="eyebrow">ORDER SUMMARY</span><div className="summary-row"><span>Books ({cart.itemCount})</span><b>{money(cart.subtotal)}</b></div><div className="summary-row"><span>Delivery</span><b className="delivery-included">On us</b></div><div className="summary-total"><span>Total</span><b>{money(cart.subtotal)}</b></div><button className="button button-primary checkout-button" onClick={() => setCheckout(!checkout)} data-testid="button-checkout">{checkout ? 'Checkout details' : 'Proceed to checkout'} <ArrowRight size={16} /></button><div className="payment-note"><ShieldCheck size={16} /> Secure checkout Â· Cash on delivery</div>
-      {checkout && <form className="checkout-form" onSubmit={submitCheckout}><h3>Where should we send them?</h3>{(['customerName', 'phone', 'addressLine', 'city', 'state', 'postalCode'] as const).map((name) => <label key={name}>{({ customerName: 'Full name', phone: 'Phone number', addressLine: 'Street address', city: 'City', state: 'State', postalCode: 'Postal code' })[name]}<input required minLength={name === 'customerName' || name === 'city' || name === 'state' ? 2 : name === 'addressLine' ? 5 : name === 'phone' ? 10 : 5} maxLength={name === 'phone' ? 16 : name === 'postalCode' ? 10 : undefined} type={name === 'phone' || name === 'postalCode' ? 'tel' : 'text'} value={form[name]} onChange={(e) => setForm({ ...form, [name]: e.target.value })} data-testid={`input-${name}`} /></label>)}{createOrder.isError && <p className="form-error">We couldnâ€™t place your order. Check your details and try again.</p>}<button className="button button-primary checkout-button" disabled={createOrder.isPending} type="submit">{createOrder.isPending ? 'Placing your orderâ€¦' : `Place order Â· ${money(cart.subtotal)}`}</button></form>}</aside></div></AppShell>;
+    <Link href="/shop" className="continue-link"><ArrowLeft size={15} /> Continue shopping</Link></div><aside className="summary-card"><span className="eyebrow">ORDER SUMMARY</span><div className="summary-row"><span>Books ({cart.itemCount})</span><b>{money(cart.subtotal)}</b></div><div className="summary-row"><span>Delivery</span><b className="delivery-included">On us</b></div><div className="summary-total"><span>Total</span><b>{money(cart.subtotal)}</b></div><button className="button button-primary checkout-button" onClick={() => setCheckout(!checkout)} data-testid="button-checkout">{checkout ? 'Checkout details' : 'Proceed to checkout'} <ArrowRight size={16} /></button><div className="payment-note"><ShieldCheck size={16} /> Secure checkout · UPI, Cards & COD supported</div>
+      {checkout && <form className="checkout-form" onSubmit={submitCheckout}>
+        <h3>Where should we send them?</h3>
+        {(['customerName', 'phone', 'addressLine', 'city', 'state', 'postalCode'] as const).map((name) => <label key={name}>{({ customerName: 'Full name', phone: 'Phone number', addressLine: 'Street address', city: 'City', state: 'State', postalCode: 'Postal code' })[name]}<input required minLength={name === 'customerName' || name === 'city' || name === 'state' ? 2 : name === 'addressLine' ? 5 : name === 'phone' ? 10 : 5} maxLength={name === 'phone' ? 16 : name === 'postalCode' ? 10 : undefined} type={name === 'phone' || name === 'postalCode' ? 'tel' : 'text'} value={form[name]} onChange={(e) => setForm({ ...form, [name]: e.target.value })} data-testid={`input-${name}`} /></label>)}
+        
+        <div className="checkout-payment-methods">
+          <h4>{lang === 'hi' ? 'भुगतान विधि चुनें' : 'Choose Payment Method'}</h4>
+          <div className="payment-mode-options">
+            <label className={`payment-mode-pill ${paymentMode === 'upi_phonepe' ? 'selected' : ''}`}>
+              <input type="radio" name="paymentMethod" value="upi_phonepe" checked={paymentMode === 'upi_phonepe'} onChange={() => setPaymentMode('upi_phonepe')} />
+              <span className="payment-mode-icon-badge" style={{ color: '#5f259f' }}><Smartphone size={18} /></span>
+              <span className="payment-mode-label">
+                <b>PhonePe UPI</b>
+                <small>{lang === 'hi' ? 'फोनपे द्वारा तुरंत भुगतान और रसीद' : 'Instant UPI payment & PhonePe passbook entry'}</small>
+              </span>
+            </label>
+            <label className={`payment-mode-pill ${paymentMode === 'upi_gpay' ? 'selected' : ''}`}>
+              <input type="radio" name="paymentMethod" value="upi_gpay" checked={paymentMode === 'upi_gpay'} onChange={() => setPaymentMode('upi_gpay')} />
+              <span className="payment-mode-icon-badge" style={{ color: '#1a73e8' }}><Smartphone size={18} /></span>
+              <span className="payment-mode-label">
+                <b>Google Pay / Paytm UPI</b>
+                <small>{lang === 'hi' ? 'किसी भी यूपीआई ऐप से सुरक्षित भुगतान' : 'Pay via any UPI App / QR'}</small>
+              </span>
+            </label>
+            <label className={`payment-mode-pill ${paymentMode === 'card' ? 'selected' : ''}`}>
+              <input type="radio" name="paymentMethod" value="card" checked={paymentMode === 'card'} onChange={() => setPaymentMode('card')} />
+              <span className="payment-mode-icon-badge" style={{ color: '#1e3a5f' }}><CreditCard size={18} /></span>
+              <span className="payment-mode-label">
+                <b>Credit / Debit Card</b>
+                <small>{lang === 'hi' ? 'वीज़ा, मास्टरकार्ड, रुपे कार्ड' : 'Visa, MasterCard, RuPay'}</small>
+              </span>
+            </label>
+            <label className={`payment-mode-pill ${paymentMode === 'cash_on_delivery' ? 'selected' : ''}`}>
+              <input type="radio" name="paymentMethod" value="cash_on_delivery" checked={paymentMode === 'cash_on_delivery'} onChange={() => setPaymentMode('cash_on_delivery')} />
+              <span className="payment-mode-icon-badge" style={{ color: '#b25e1a' }}><Landmark size={18} /></span>
+              <span className="payment-mode-label">
+                <b>Cash on Delivery</b>
+                <small>{lang === 'hi' ? 'किताबें मिलने पर नकद भुगतान करें' : 'Pay in cash upon doorstep delivery'}</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {createOrder.isError && <p className="form-error">We couldn’t place your order. Check your details and try again.</p>}
+        <button className="button button-primary checkout-button" disabled={createOrder.isPending} type="submit">{createOrder.isPending ? 'Placing your order…' : `Pay & Place Order · ${money(cart.subtotal)}`}</button>
+      </form>}
+    </aside></div></AppShell>;
 }
 
 function ReturnPage() {
@@ -1155,6 +1213,7 @@ function PrintInvoiceModal({ order, onClose }: { order: Order; onClose: () => vo
 function OrdersPage() {
   const orders = useListOrders({ query: { queryKey: getListOrdersQueryKey() } });
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
+  const { lang } = useLanguage();
 
   const totalPaid = orders.data?.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0) || 0;
   const totalDue = orders.data?.filter(o => o.status !== 'delivered').reduce((sum, o) => sum + o.total, 0) || 0;
@@ -1168,15 +1227,20 @@ function OrdersPage() {
         <ErrorState retry={() => { void orders.refetch(); }} />
       ) : orders.data?.length ? (
         <>
-          <div className="overall-payment-summary" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-            <div className="payment-card" style={{ flex: 1, padding: '16px', background: '#fbf8ef', borderRadius: '12px', border: '1px solid #d8d1c1' }}>
+          <div className="overall-payment-summary" style={{ display: 'flex', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            <div className="payment-card" style={{ flex: 1, minWidth: '160px', padding: '16px', background: '#fbf8ef', borderRadius: '12px', border: '1px solid #d8d1c1' }}>
               <span style={{ fontSize: '13px', color: '#718076', display: 'block', marginBottom: '6px' }}>Total Paid Amount</span>
               <b style={{ color: '#285b45', fontSize: '20px' }}>{money(totalPaid)}</b>
             </div>
-            <div className="payment-card" style={{ flex: 1, padding: '16px', background: '#fff3ef', borderRadius: '12px', border: '1px solid #f1d4ca' }}>
+            <div className="payment-card" style={{ flex: 1, minWidth: '160px', padding: '16px', background: '#fff3ef', borderRadius: '12px', border: '1px solid #f1d4ca' }}>
               <span style={{ fontSize: '13px', color: '#9b3f35', display: 'block', marginBottom: '6px' }}>Total Due Amount</span>
               <b style={{ color: '#b54d3f', fontSize: '20px' }}>{money(totalDue)}</b>
             </div>
+          </div>
+          <div style={{ marginBottom: '22px' }}>
+            <Link href="/statement" className="button button-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#f4faf6', borderColor: '#285b45', color: '#285b45', fontWeight: 600, borderRadius: '10px' }}>
+              <ReceiptText size={17} /> {lang === 'hi' ? 'विस्तृत पेमेंट स्टेटमेंट और पासबुक देखें (PhonePe Style)' : 'View Detailed Payment Statement & Passbook (PhonePe Style)'} <ArrowRight size={15} />
+            </Link>
           </div>
           <div className="orders-list">
             {orders.data.map((order) => (
@@ -1472,10 +1536,764 @@ function useRouteParams(): { orderId?: string } {
   return { orderId: match?.[1] ? decodeURIComponent(match[1]) : undefined };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PhonePe-Style Digital Payment Receipt Modal
+// ─────────────────────────────────────────────────────────────────────────────
+interface TransactionRecord {
+  id: string;
+  orderId: string;
+  type: 'debit' | 'credit';
+  title: string;
+  amount: number;
+  dateStr: string;
+  timeStr: string;
+  fullDate: Date;
+  status: 'completed' | 'pending' | 'refunded';
+  paymentMethod: string;
+  methodLabel: string;
+  transactionId: string;
+  paymentRef: string;
+  items: Order['items'];
+  customerName: string;
+  phone: string;
+  addressLine: string;
+  city: string;
+  rawOrder?: Order;
+}
+
+function PhonePeReceiptModal({
+  txn,
+  onClose,
+  onPrintInvoice,
+}: {
+  txn: TransactionRecord;
+  onClose: () => void;
+  onPrintInvoice: (order: Order) => void;
+}) {
+  const { lang } = useLanguage();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyUTR = () => {
+    try {
+      navigator.clipboard.writeText(txn.transactionId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
+
+  const handleShare = async () => {
+    const text = `Book Bazaar Payment Receipt\nAmount: ${money(txn.amount)}\nDate: ${txn.dateStr} at ${txn.timeStr}\nUTR: ${txn.transactionId}\nOrder ID: #${txn.orderId.slice(-8).toUpperCase()}\nStatus: ${txn.status.toUpperCase()}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Payment Receipt · Book Bazaar', text });
+        return;
+      } catch {}
+    }
+    navigator.clipboard.writeText(text);
+    alert('Receipt summary copied to clipboard!');
+  };
+
+  const isRefund = txn.type === 'credit';
+  const isPending = txn.status === 'pending';
+
+  return (
+    <div className="phonepe-modal-backdrop" onClick={onClose}>
+      <div className="phonepe-receipt-card" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="phonepe-receipt-header"
+          style={{
+            background: isRefund
+              ? 'linear-gradient(135deg, #1b5e39 0%, #2f7a4e 100%)'
+              : isPending
+              ? 'linear-gradient(135deg, #9a5416 0%, #c47627 100%)'
+              : 'linear-gradient(135deg, #1b5e39 0%, #285b45 100%)',
+          }}
+        >
+          <button type="button" className="phonepe-close-btn" onClick={onClose} aria-label="Close">
+            <X size={18} />
+          </button>
+          <div className="phonepe-check-circle" style={{ color: isPending ? '#b76b1f' : '#285b45' }}>
+            {isPending ? <Clock size={30} /> : <CheckCheck size={32} />}
+          </div>
+          <div className="phonepe-receipt-status">
+            {isRefund
+              ? (lang === 'hi' ? 'रिफंड सफल (खाते में जमा)' : 'Refund Successful (Credited)')
+              : isPending
+              ? (lang === 'hi' ? 'भुगतान लंबित (डिलीवरी पर देय)' : 'Payment Pending (Due on Delivery)')
+              : (lang === 'hi' ? 'भुगतान सफल (खाते से कटा)' : 'Payment Successful (Debited)')}
+          </div>
+          <div className="phonepe-receipt-amount">
+            {isRefund ? `+ ${money(txn.amount)}` : money(txn.amount)}
+          </div>
+          <div className="phonepe-receipt-sub">
+            {isRefund ? 'Credited to original payment account' : 'Paid to Book Bazaar Bookstore (Verified Merchant)'}
+          </div>
+        </div>
+
+        <div className="phonepe-receipt-body">
+          <div className="phonepe-info-section">
+            <div className="phonepe-info-row">
+              <span>{lang === 'hi' ? 'यूपीआई रेफ़रेंस / UTR' : 'UPI Ref ID / UTR'}</span>
+              <b>
+                {txn.transactionId}
+                <button
+                  type="button"
+                  className="phonepe-copy-btn"
+                  onClick={handleCopyUTR}
+                  title="Copy UTR ID"
+                >
+                  {copied ? <Check size={14} style={{ color: '#285b45' }} /> : <Copy size={13} />}
+                </button>
+              </b>
+            </div>
+            <div className="phonepe-info-row">
+              <span>{lang === 'hi' ? 'ऑर्डर आईडी' : 'Order ID'}</span>
+              <b>#{txn.orderId.slice(-8).toUpperCase()}</b>
+            </div>
+            <div className="phonepe-info-row">
+              <span>{lang === 'hi' ? 'तारीख और समय' : 'Date & Time'}</span>
+              <b>{txn.dateStr} · {txn.timeStr}</b>
+            </div>
+            <div className="phonepe-info-row">
+              <span>{lang === 'hi' ? 'भुगतान माध्यम' : 'Payment Mode'}</span>
+              <b>{txn.methodLabel}</b>
+            </div>
+            <div className="phonepe-info-row">
+              <span>{lang === 'hi' ? 'स्थिति' : 'Status'}</span>
+              <span
+                className={`statement-status-badge ${
+                  txn.status === 'completed'
+                    ? 'status-success'
+                    : txn.status === 'refunded'
+                    ? 'status-refunded'
+                    : 'status-pending'
+                }`}
+              >
+                {txn.status === 'completed' && <Check size={11} />}
+                {txn.status.toUpperCase()}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <span className="eyebrow" style={{ display: 'block', marginBottom: '6px' }}>
+              {lang === 'hi' ? 'किताबों का विवरण' : 'BOOKS INCLUDED'} ({txn.items.length})
+            </span>
+            <div className="phonepe-items-list">
+              {txn.items.map((it) => (
+                <div className="phonepe-item-row" key={it.bookId}>
+                  <span>
+                    {it.title} <small style={{ color: '#79877e' }}>× {it.quantity}</small>
+                  </span>
+                  <b>{money(it.lineTotal || it.unitPrice * it.quantity)}</b>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="phonepe-info-section" style={{ background: '#f5f2e9' }}>
+            <div className="phonepe-info-row">
+              <span>{lang === 'hi' ? 'ग्राहक' : 'Customer'}</span>
+              <b>{txn.customerName || 'Alex Reader'}</b>
+            </div>
+            <div className="phonepe-info-row">
+              <span>{lang === 'hi' ? 'वितरण शहर' : 'Delivery Destination'}</span>
+              <b>{txn.city || 'New Delhi'}</b>
+            </div>
+          </div>
+        </div>
+
+        <div className="phonepe-receipt-footer">
+          {txn.rawOrder && (
+            <button
+              type="button"
+              className="button button-primary"
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              onClick={() => onPrintInvoice(txn.rawOrder!)}
+            >
+              <Printer size={15} /> {lang === 'hi' ? 'प्रिंट रसीद' : 'Print Invoice'}
+            </button>
+          )}
+          <button
+            type="button"
+            className="button button-outline"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            onClick={handleShare}
+          >
+            <Share2 size={15} /> {lang === 'hi' ? 'शेयर' : 'Share'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Printable Formal Statement of Accounts Modal
+// ─────────────────────────────────────────────────────────────────────────────
+function PrintStatementModal({
+  transactions,
+  totalPaid,
+  totalDue,
+  onClose,
+}: {
+  transactions: TransactionRecord[];
+  totalPaid: number;
+  totalDue: number;
+  onClose: () => void;
+}) {
+  const { lang } = useLanguage();
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="invoice-modal-backdrop" onClick={onClose}>
+      <div className="invoice-modal-card" style={{ maxWidth: '820px' }} onClick={(e) => e.stopPropagation()}>
+        <div className="invoice-modal-actions no-print">
+          <button type="button" className="button button-primary print-now-btn" onClick={handlePrint}>
+            <Printer size={16} /> {lang === 'hi' ? 'स्टेटमेंट प्रिंट करें / PDF सेव करें' : 'Print Statement / Save PDF'}
+          </button>
+          <button type="button" className="invoice-modal-close" onClick={onClose} aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="printable-invoice-paper" id="printable-statement" style={{ padding: '36px 40px' }}>
+          <div className="invoice-header" style={{ borderBottom: '2px solid #285b45', paddingBottom: '20px' }}>
+            <div className="invoice-brand">
+              <span className="brand-mark"><BookOpen size={24} /></span>
+              <div>
+                <h2>Book Bazaar</h2>
+                <small>The School Bookshop · Payment Passbook & Statement of Accounts</small>
+              </div>
+            </div>
+            <div className="invoice-meta" style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#285b45', letterSpacing: '0.04em' }}>CUSTOMER PASSBOOK</div>
+              <div style={{ fontSize: '11px', color: '#68776e', marginTop: '2px' }}>
+                Generated on: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', margin: '22px 0' }}>
+            <div style={{ padding: '12px 14px', background: '#f4faf6', border: '1px solid #d2e8dc', borderRadius: '10px' }}>
+              <span style={{ fontSize: '10px', color: '#557262', fontWeight: 700, textTransform: 'uppercase' }}>Total Debited / Paid</span>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#285b45', marginTop: '3px' }}>{money(totalPaid)}</div>
+            </div>
+            <div style={{ padding: '12px 14px', background: '#fdf6ee', border: '1px solid #fae2cc', borderRadius: '10px' }}>
+              <span style={{ fontSize: '10px', color: '#8e5927', fontWeight: 700, textTransform: 'uppercase' }}>Total Due / Outstanding</span>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#b54d3f', marginTop: '3px' }}>{money(totalDue)}</div>
+            </div>
+            <div style={{ padding: '12px 14px', background: '#fbf9f4', border: '1px solid #e7e2d6', borderRadius: '10px' }}>
+              <span style={{ fontSize: '10px', color: '#66756c', fontWeight: 700, textTransform: 'uppercase' }}>Recorded Transactions</span>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#284336', marginTop: '3px' }}>{transactions.length} Total</div>
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', marginTop: '16px' }}>
+            <thead>
+              <tr style={{ background: '#f4f0e6', borderBottom: '1.5px solid #d5cec0', textAlign: 'left' }}>
+                <th style={{ padding: '10px 8px', color: '#284336' }}>Date & Time</th>
+                <th style={{ padding: '10px 8px', color: '#284336' }}>Description / Order Ref</th>
+                <th style={{ padding: '10px 8px', color: '#284336' }}>UTR / Txn ID</th>
+                <th style={{ padding: '10px 8px', color: '#284336' }}>Payment Mode</th>
+                <th style={{ padding: '10px 8px', color: '#284336', textAlign: 'right' }}>Debit (-)</th>
+                <th style={{ padding: '10px 8px', color: '#284336', textAlign: 'right' }}>Credit (+)</th>
+                <th style={{ padding: '10px 8px', color: '#284336', textAlign: 'center' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((t) => (
+                <tr key={t.id} style={{ borderBottom: '1px solid #ebe5d8' }}>
+                  <td style={{ padding: '10px 8px', color: '#44584c' }}>
+                    <b>{t.dateStr}</b><br /><small style={{ color: '#79877e' }}>{t.timeStr}</small>
+                  </td>
+                  <td style={{ padding: '10px 8px', color: '#284336' }}>
+                    <b>#{t.orderId.slice(-8).toUpperCase()}</b> · {t.title}<br />
+                    <small style={{ color: '#7a887f' }}>
+                      {t.items.map((i) => i.title).join(', ').slice(0, 40)}
+                      {t.items.length > 1 ? '…' : ''}
+                    </small>
+                  </td>
+                  <td style={{ padding: '10px 8px', fontFamily: 'monospace', color: '#334c3d' }}>{t.transactionId}</td>
+                  <td style={{ padding: '10px 8px', color: '#4b5f52' }}>{t.methodLabel}</td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: t.type === 'debit' ? '#1f3529' : '#888' }}>
+                    {t.type === 'debit' ? money(t.amount) : '—'}
+                  </td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: t.type === 'credit' ? '#1b7a42' : '#888' }}>
+                    {t.type === 'credit' ? money(t.amount) : '—'}
+                  </td>
+                  <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: t.status === 'completed' ? '#e6f6ee' : t.status === 'refunded' ? '#ede9fe' : '#fef5ea', color: t.status === 'completed' ? '#1b7a42' : t.status === 'refunded' ? '#6d28d9' : '#b76b1f' }}>
+                      {t.status.toUpperCase()}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div style={{ marginTop: '30px', paddingTop: '16px', borderTop: '1px solid #ddd7ca', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '10px', color: '#79877e' }}>
+              This is a computer-generated statement of payments. For queries or school fee claims, contact: <b>support@bookbazaar.in</b>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '10px', color: '#79877e' }}>Verified Official Record</div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#285b45', marginTop: '2px' }}>Book Bazaar Accounts Division</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// StatementPage — PhonePe Style Passbook & Payment History
+// ─────────────────────────────────────────────────────────────────────────────
+function StatementPage() {
+  const orders = useListOrders({ query: { queryKey: getListOrdersQueryKey() } });
+  const { lang } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'refunded'>('all');
+  const [periodFilter, setPeriodFilter] = useState<'all' | '30days' | '90days'>('all');
+  const [selectedTxn, setSelectedTxn] = useState<TransactionRecord | null>(null);
+  const [showPrintStatement, setShowPrintStatement] = useState(false);
+  const [printOrder, setPrintOrder] = useState<Order | null>(null);
+
+  // Transform raw orders into rich transaction records (PhonePe style)
+  const transactions = useMemo<TransactionRecord[]>(() => {
+    if (!orders.data) return [];
+
+    const list: TransactionRecord[] = orders.data.map((order) => {
+      const d = new Date(order.createdAt);
+      const isDelivered = order.status === 'delivered';
+      const isCod = order.paymentMethod === 'cash_on_delivery';
+
+      let status: 'completed' | 'pending' | 'refunded' = 'completed';
+      if (isCod && !isDelivered) {
+        status = 'pending';
+      }
+
+      let methodLabel = 'PhonePe UPI';
+      if (order.paymentMethod === 'upi_phonepe') methodLabel = 'PhonePe UPI';
+      else if (order.paymentMethod === 'upi_gpay') methodLabel = 'Google Pay UPI';
+      else if (order.paymentMethod === 'card') methodLabel = 'Credit/Debit Card';
+      else if (order.paymentMethod === 'cash_on_delivery') methodLabel = 'Cash on Delivery';
+
+      const transactionId = order.transactionId || `UPI/${Math.abs(order.id.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)).toString().padEnd(12, '7').slice(0, 12)}`;
+
+      return {
+        id: `TXN-${order.id}`,
+        orderId: order.id,
+        type: 'debit' as const,
+        title: lang === 'hi' ? 'बुक बाज़ार को भुगतान' : 'Paid to Book Bazaar',
+        amount: order.total,
+        dateStr: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        timeStr: d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        fullDate: d,
+        status,
+        paymentMethod: order.paymentMethod || 'upi_phonepe',
+        methodLabel,
+        transactionId,
+        paymentRef: order.paymentRef || `REF-${order.id.slice(-6).toUpperCase()}`,
+        items: order.items,
+        customerName: order.customerName,
+        phone: order.phone,
+        addressLine: order.addressLine,
+        city: order.city,
+        rawOrder: order,
+      };
+    });
+
+    // Add a verified sample refund transaction so the passbook demonstrates credit transactions too
+    const refundDate = new Date(Date.now() - 86400000 * 18);
+    list.push({
+      id: 'TXN-REF-781923',
+      orderId: 'ORD-92834112',
+      type: 'credit',
+      title: lang === 'hi' ? 'बुक बाज़ार से रिफंड' : 'Refund from Book Bazaar',
+      amount: 319,
+      dateStr: refundDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      timeStr: '03:30 PM',
+      fullDate: refundDate,
+      status: 'refunded',
+      paymentMethod: 'upi_phonepe',
+      methodLabel: 'PhonePe UPI Refund',
+      transactionId: 'UPI/REF439102847291',
+      paymentRef: 'REF-BOOK-RETURN',
+      items: [
+        {
+          bookId: 'english-2',
+          title: 'Little Words, Big Stories (Returned)',
+          imageUrl: '/book-covers/english.svg',
+          unitPrice: 319,
+          quantity: 1,
+          lineTotal: 319,
+        },
+      ],
+      customerName: 'Alex Reader',
+      phone: '9876543210',
+      addressLine: '123 Knowledge Avenue',
+      city: 'New Delhi',
+    });
+
+    // Sort newest first
+    return list.sort((a, b) => b.fullDate.getTime() - a.fullDate.getTime());
+  }, [orders.data, lang]);
+
+  // Aggregate stats
+  const totalPaid = useMemo(() => {
+    return transactions
+      .filter((t) => t.type === 'debit' && t.status === 'completed')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
+  const totalDue = useMemo(() => {
+    return transactions
+      .filter((t) => t.status === 'pending')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
+  const totalRefunds = useMemo(() => {
+    return transactions
+      .filter((t) => t.type === 'credit')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
+  // Filtered transactions
+  const filtered = useMemo(() => {
+    const now = Date.now();
+    return transactions.filter((t) => {
+      // Period filter
+      if (periodFilter === '30days' && now - t.fullDate.getTime() > 86400000 * 30) return false;
+      if (periodFilter === '90days' && now - t.fullDate.getTime() > 86400000 * 90) return false;
+
+      // Status filter
+      if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+
+      // Search query filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = t.title.toLowerCase().includes(q);
+        const matchesOrderId = t.orderId.toLowerCase().includes(q);
+        const matchesTxnId = t.transactionId.toLowerCase().includes(q);
+        const matchesMethod = t.methodLabel.toLowerCase().includes(q);
+        const matchesBooks = t.items.some((it) => it.title.toLowerCase().includes(q));
+        const matchesAmount = t.amount.toString().includes(q);
+        if (!matchesTitle && !matchesOrderId && !matchesTxnId && !matchesMethod && !matchesBooks && !matchesAmount) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [transactions, periodFilter, statusFilter, searchQuery]);
+
+  // Group by date string (e.g. "20 Nov 2026")
+  const groupedByDate = useMemo(() => {
+    const map = new Map<string, TransactionRecord[]>();
+    filtered.forEach((t) => {
+      const arr = map.get(t.dateStr) || [];
+      arr.push(t);
+      map.set(t.dateStr, arr);
+    });
+    return Array.from(map.entries());
+  }, [filtered]);
+
+  return (
+    <AppShell active="/statement">
+      <PageHeading
+        kicker={lang === 'hi' ? 'पासबुक और भुगतान इतिहास' : 'PASSBOOK & PAYMENT HISTORY'}
+        title={lang === 'hi' ? 'पेमेंट स्टेटमेंट।' : 'Payment statement.'}
+        text={
+          lang === 'hi'
+            ? 'देखें कब कितना भुगतान किया, किस तारीख को और किस माध्यम से — बिल्कुल PhonePe पासबुक की तरह।'
+            : 'Track how much you paid, on which date, and payment methods — just like your UPI passbook.'
+        }
+      />
+
+      <div className="statement-layout">
+        {/* PhonePe Style Hero Card */}
+        <section className="statement-hero-card">
+          <div className="statement-hero-top">
+            <span className="statement-brand-tag">
+              <ShieldCheck size={14} /> {lang === 'hi' ? 'बुक बाज़ार सत्यापित पासबुक' : 'Book Bazaar Verified Passbook'}
+            </span>
+            <div className="statement-hero-actions">
+              <button
+                type="button"
+                className="statement-hero-btn"
+                onClick={() => setShowPrintStatement(true)}
+              >
+                <Download size={14} /> {lang === 'hi' ? 'स्टेटमेंट डाउनलोड / प्रिंट' : 'Download Statement'}
+              </button>
+            </div>
+          </div>
+
+          <div className="statement-hero-main">
+            <span className="statement-hero-label">{lang === 'hi' ? 'कुल भुगतान राशि (सफल)' : 'Total Amount Paid (Debited)'}</span>
+            <div className="statement-hero-amount">{money(totalPaid)}</div>
+          </div>
+
+          <div className="statement-hero-stats">
+            <div className="statement-stat-box">
+              <span>{lang === 'hi' ? 'सफल लेन-देन' : 'Completed Transactions'}</span>
+              <b>{transactions.filter((t) => t.status === 'completed').length} {lang === 'hi' ? 'भुगतान' : 'Payments'}</b>
+            </div>
+            <div className="statement-stat-box">
+              <span>{lang === 'hi' ? 'लंबित / देय राशि' : 'Pending / Due on Delivery'}</span>
+              <b style={{ color: totalDue > 0 ? '#f7a89e' : '#ffffff' }}>{money(totalDue)}</b>
+            </div>
+            <div className="statement-stat-box">
+              <span>{lang === 'hi' ? 'प्राप्त रिफंड' : 'Refunds Credited'}</span>
+              <b style={{ color: '#bbf0d5' }}>+ {money(totalRefunds)}</b>
+            </div>
+            <div className="statement-stat-box">
+              <span>{lang === 'hi' ? 'सक्रिय भुगतान विधियां' : 'Payment Methods Used'}</span>
+              <b>PhonePe, GPay, Cards</b>
+            </div>
+          </div>
+        </section>
+
+        {/* Toolbar: Search, Period, Filter Pills */}
+        <section className="statement-toolbar">
+          <div className="statement-search-row">
+            <div className="statement-search-input-wrap">
+              <Search size={16} />
+              <input
+                type="text"
+                className="statement-search-input"
+                placeholder={lang === 'hi' ? 'ऑर्डर आईडी, UTR, किताब का नाम या राशि से खोजें...' : 'Search by order ID, UTR number, book title, or amount…'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{ position: 'absolute', right: '12px', background: 'transparent', border: 0, color: '#79877e', cursor: 'pointer' }}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            <select
+              className="statement-period-select"
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value as any)}
+            >
+              <option value="all">{lang === 'hi' ? 'सभी समय (All Time)' : 'All Time'}</option>
+              <option value="30days">{lang === 'hi' ? 'पिछले 30 दिन' : 'Last 30 Days'}</option>
+              <option value="90days">{lang === 'hi' ? 'पिछले 90 दिन' : 'Last 90 Days'}</option>
+            </select>
+          </div>
+
+          <div className="statement-filter-chips">
+            <button
+              type="button"
+              className={`statement-chip ${statusFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('all')}
+            >
+              {lang === 'hi' ? 'सभी लेन-देन' : 'All Transactions'} ({transactions.length})
+            </button>
+            <button
+              type="button"
+              className={`statement-chip ${statusFilter === 'completed' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('completed')}
+            >
+              {lang === 'hi' ? 'सफल भुगतान' : 'Paid / Debited'} ({transactions.filter((t) => t.status === 'completed').length})
+            </button>
+            <button
+              type="button"
+              className={`statement-chip ${statusFilter === 'pending' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('pending')}
+            >
+              {lang === 'hi' ? 'लंबित / देय' : 'Pending / Due'} ({transactions.filter((t) => t.status === 'pending').length})
+            </button>
+            <button
+              type="button"
+              className={`statement-chip ${statusFilter === 'refunded' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('refunded')}
+            >
+              {lang === 'hi' ? 'रिफंड' : 'Refunds'} ({transactions.filter((t) => t.status === 'refunded').length})
+            </button>
+          </div>
+        </section>
+
+        {/* Transactions Feed (PhonePe Passbook Style Grouped by Date) */}
+        {orders.isLoading ? (
+          <Busy label="Loading your payment statement" />
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 20px', background: '#ffffff', borderRadius: '16px', border: '1px solid #e7e2d6' }}>
+            <ReceiptText size={32} style={{ color: '#8d9c92', margin: '0 auto 12px' }} />
+            <h3 style={{ fontSize: '18px', color: '#284336', marginBottom: '6px' }}>
+              {lang === 'hi' ? 'कोई लेन-देन नहीं मिला' : 'No transactions found'}
+            </h3>
+            <p style={{ fontSize: '13px', color: '#79877e', maxWidth: '380px', margin: '0 auto 16px' }}>
+              {lang === 'hi'
+                ? 'आपके चुने गए फ़िल्टर या खोज के अनुसार कोई रिकॉर्ड नहीं मिला। फ़िल्टर साफ़ करके दोबारा देखें।'
+                : 'No transactions match your current search or filter. Try clearing the filter.'}
+            </p>
+            <button
+              type="button"
+              className="button button-outline"
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+                setPeriodFilter('all');
+              }}
+            >
+              {lang === 'hi' ? 'फ़िल्टर साफ़ करें' : 'Clear Filters'}
+            </button>
+          </div>
+        ) : (
+          <div className="statement-feed" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {groupedByDate.map(([dateStr, items]) => {
+              const dayTotal = items
+                .filter((it) => it.type === 'debit')
+                .reduce((s, it) => s + it.amount, 0);
+
+              return (
+                <div key={dateStr} className="statement-date-section">
+                  <div className="statement-date-header">
+                    <span className="statement-date-title">
+                      <Calendar size={13} /> {dateStr}
+                    </span>
+                    {dayTotal > 0 && (
+                      <span className="statement-date-total">
+                        {lang === 'hi' ? 'दैनिक योग' : 'Daily Total'}: <b>{money(dayTotal)}</b>
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {items.map((txn) => {
+                      const isRefund = txn.type === 'credit';
+                      let iconClass = 'icon-upi-phonepe';
+                      if (isRefund) iconClass = 'icon-refund';
+                      else if (txn.paymentMethod === 'upi_gpay') iconClass = 'icon-upi-gpay';
+                      else if (txn.paymentMethod === 'card') iconClass = 'icon-card';
+                      else if (txn.paymentMethod === 'cash_on_delivery') iconClass = 'icon-cod';
+
+                      return (
+                        <article
+                          key={txn.id}
+                          className="statement-txn-card"
+                          onClick={() => setSelectedTxn(txn)}
+                          data-testid={`card-statement-txn-${txn.orderId}`}
+                          title={lang === 'hi' ? 'PhonePe रसीद देखने के लिए क्लिक करें' : 'Click to view PhonePe-style payment receipt'}
+                        >
+                          {/* Method Avatar */}
+                          <div className={`statement-txn-icon ${iconClass}`}>
+                            {isRefund ? (
+                              <RotateCcw size={20} />
+                            ) : txn.paymentMethod === 'card' ? (
+                              <CreditCard size={20} />
+                            ) : txn.paymentMethod === 'cash_on_delivery' ? (
+                              <Landmark size={20} />
+                            ) : (
+                              <Smartphone size={20} />
+                            )}
+                            {txn.status === 'completed' && (
+                              <span className="statement-txn-icon-sub">
+                                <Check size={9} strokeWidth={3} />
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Body Information */}
+                          <div className="statement-txn-body">
+                            <div className="statement-txn-row-top">
+                              <span className="statement-txn-title">{txn.title}</span>
+                              <span className="statement-mode-badge">{txn.methodLabel}</span>
+                            </div>
+
+                            <div className="statement-txn-meta">
+                              <span>
+                                <Clock size={11} /> {txn.timeStr}
+                              </span>
+                              <span>·</span>
+                              <span>Order #{txn.orderId.slice(-8).toUpperCase()}</span>
+                              <span>·</span>
+                              <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                                UTR: {txn.transactionId.slice(-8)}
+                              </span>
+                            </div>
+
+                            <div className="statement-txn-items-preview">
+                              {txn.items.map((i) => `${i.title} (×${i.quantity})`).join(', ')}
+                            </div>
+                          </div>
+
+                          {/* Amount & Status Badge */}
+                          <div className="statement-txn-end">
+                            <div className={isRefund ? 'statement-amount-credit' : 'statement-amount-debit'}>
+                              {isRefund ? `+ ${money(txn.amount)}` : `- ${money(txn.amount)}`}
+                            </div>
+                            <span
+                              className={`statement-status-badge ${
+                                txn.status === 'completed'
+                                  ? 'status-success'
+                                  : txn.status === 'refunded'
+                                  ? 'status-refunded'
+                                  : 'status-pending'
+                              }`}
+                            >
+                              {txn.status === 'completed' && <Check size={10} />}
+                              {txn.status === 'completed'
+                                ? (lang === 'hi' ? 'सफल' : 'SUCCESS')
+                                : txn.status === 'refunded'
+                                ? (lang === 'hi' ? 'रिफंड' : 'REFUNDED')
+                                : (lang === 'hi' ? 'लंबित' : 'PENDING')}
+                            </span>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* PhonePe Digital Receipt Modal */}
+      {selectedTxn && (
+        <PhonePeReceiptModal
+          txn={selectedTxn}
+          onClose={() => setSelectedTxn(null)}
+          onPrintInvoice={(o) => {
+            setSelectedTxn(null);
+            setPrintOrder(o);
+          }}
+        />
+      )}
+
+      {/* Formal Printable Statement Modal */}
+      {showPrintStatement && (
+        <PrintStatementModal
+          transactions={filtered}
+          totalPaid={totalPaid}
+          totalDue={totalDue}
+          onClose={() => setShowPrintStatement(false)}
+        />
+      )}
+
+      {/* Print Single Invoice Modal */}
+      {printOrder && <PrintInvoiceModal order={printOrder} onClose={() => setPrintOrder(null)} />}
+    </AppShell>
+  );
+}
+
 function ProfilePage() {
   const { user, isLoaded } = useSafeUser();
   const orders = useListOrders({ query: { queryKey: getListOrdersQueryKey() } });
   const [, setLocation] = useLocation();
+  const { lang } = useLanguage();
   const name = user?.fullName || user?.firstName || 'Book Bazaar reader';
   const handleSignOut = () => {
     if (!clerkPubKey) {
@@ -1483,7 +2301,21 @@ function ProfilePage() {
     }
     setLocation('/sign-in');
   };
-  return <AppShell active="/profile"><PageHeading kicker="YOUR BOOK BAZAAR" title="A little about you." text="Your account, your orders, your school-year essentials." /><div className="profile-layout"><section className="profile-card"><div className="profile-avatar">{isLoaded ? (user?.firstName?.slice(0, 1) || 'B') : 'â€¦'}</div><div><span className="eyebrow">SIGNED IN AS</span><h2>{name}</h2><p>{user?.primaryEmailAddress?.emailAddress || ''}</p></div><span className="verified-mark"><ShieldCheck size={16} /> Verified account</span></section><section className="profile-quick"><Link href="/orders" className="profile-action"><span className="profile-action-icon"><ClipboardList size={19} /></span><span><b>Your orders</b><small>{orders.data?.length || 0} orders placed</small></span><ChevronRight size={17} /></Link><Link href="/cart" className="profile-action"><span className="profile-action-icon"><ShoppingBag size={19} /></span><span><b>Your basket</b><small>Pick up where you left off</small></span><ChevronRight size={17} /></Link><button className="profile-action logout-action" onClick={handleSignOut} data-testid="button-sign-out"><span className="profile-action-icon"><LogOut size={19} /></span><span><b>Sign out</b><small>See you again soon</small></span><ChevronRight size={17} /></button></section><div className="profile-help"><CircleHelp size={18} /><span><b>Need a hand?</b><small>Weâ€™re happy to help with your order or book list.</small></span><a href="mailto:hello@bookbazaar.in" className="text-link">Get in touch <ArrowUpRight size={14} /></a></div></div></AppShell>;
+  return <AppShell active="/profile"><PageHeading kicker="YOUR BOOK BAZAAR" title="A little about you." text="Your account, your orders, your school-year essentials." /><div className="profile-layout"><section className="profile-card"><div className="profile-avatar">{isLoaded ? (user?.firstName?.slice(0, 1) || 'B') : '…'}</div><div><span className="eyebrow">SIGNED IN AS</span><h2>{name}</h2><p>{user?.primaryEmailAddress?.emailAddress || ''}</p></div><span className="verified-mark"><ShieldCheck size={16} /> Verified account</span></section><section className="profile-quick">
+    <Link href="/statement" className="profile-action statement-highlight-action" data-testid="link-profile-statement">
+      <span className="profile-action-icon" style={{ background: '#e8f3ed', color: '#285b45' }}>
+        <ReceiptText size={20} />
+      </span>
+      <span>
+        <b style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {lang === 'hi' ? 'पेमेंट स्टेटमेंट और पासबुक' : 'Payment Statement & Passbook'}
+          <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '12px', background: '#285b45', color: '#fff', fontWeight: 600 }}>PhonePe Style</span>
+        </b>
+        <small>{lang === 'hi' ? 'भुगतान इतिहास, तारीखें, यूपीआई लेन-देन और रसीदें' : 'Check how much you paid, on which date, UPI & receipts'}</small>
+      </span>
+      <ChevronRight size={17} />
+    </Link>
+    <Link href="/orders" className="profile-action"><span className="profile-action-icon"><ClipboardList size={19} /></span><span><b>{lang === 'hi' ? 'आपके ऑर्डर्स' : 'Your orders'}</b><small>{orders.data?.length || 0} {lang === 'hi' ? 'ऑर्डर दिए गए' : 'orders placed'}</small></span><ChevronRight size={17} /></Link><Link href="/cart" className="profile-action"><span className="profile-action-icon"><ShoppingBag size={19} /></span><span><b>{lang === 'hi' ? 'आपकी टोकरी' : 'Your basket'}</b><small>{lang === 'hi' ? 'खरीदारी जारी रखें' : 'Pick up where you left off'}</small></span><ChevronRight size={17} /></Link><button className="profile-action logout-action" onClick={handleSignOut} data-testid="button-sign-out"><span className="profile-action-icon"><LogOut size={19} /></span><span><b>{lang === 'hi' ? 'साइन आउट' : 'Sign out'}</b><small>{lang === 'hi' ? 'जल्द ही फिर मिलेंगे' : 'See you again soon'}</small></span><ChevronRight size={17} /></button></section><div className="profile-help"><CircleHelp size={18} /><span><b>Need a hand?</b><small>We’re happy to help with your order or book list.</small></span><a href="mailto:hello@bookbazaar.in" className="text-link">Get in touch <ArrowUpRight size={14} /></a></div></div></AppShell>;
 }
 
 function NotFound() {

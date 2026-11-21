@@ -61,6 +61,9 @@ export interface Order {
   postalCode: string;
   createdAt: string;
   items: OrderItem[];
+  transactionId?: string;
+  paymentRef?: string;
+  paidAt?: string;
 }
 
 export const MOCK_BOOKS: Book[] = [
@@ -365,46 +368,124 @@ export function getLocalOrders(): Order[] {
     const raw = localStorage.getItem(ORDERS_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  // Sample initial order
-  const sampleOrder: Order = {
-    id: "ORD-92834112",
-    userId: "demo_user",
-    status: "processing",
-    paymentMethod: "cash_on_delivery",
-    itemCount: 2,
-    total: 678,
-    customerName: "Alex Reader",
-    phone: "9876543210",
-    addressLine: "123 Knowledge Avenue",
-    city: "New Delhi",
-    state: "Delhi",
-    postalCode: "110001",
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    items: [
-      {
-        bookId: "math-5-core",
-        title: "Everyday Mathematics",
-        imageUrl: "/book-covers/mathematics.svg",
-        unitPrice: 359,
-        quantity: 1,
-        lineTotal: 359
-      },
-      {
-        bookId: "english-2",
-        title: "Little Words, Big Stories",
-        imageUrl: "/book-covers/english.svg",
-        unitPrice: 319,
-        quantity: 1,
-        lineTotal: 319
-      }
-    ]
-  };
-  return [sampleOrder];
+  // Sample initial orders with authentic payment history (PhonePe / UPI / Card / COD)
+  const sampleOrders: Order[] = [
+    {
+      id: "ORD-92834112",
+      userId: "demo_user",
+      status: "delivered",
+      paymentMethod: "upi_phonepe",
+      itemCount: 2,
+      total: 678,
+      customerName: "Alex Reader",
+      phone: "9876543210",
+      addressLine: "123 Knowledge Avenue",
+      city: "New Delhi",
+      state: "Delhi",
+      postalCode: "110001",
+      createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
+      paidAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+      transactionId: "UPI/432581029412",
+      paymentRef: "PP-TXN-9841029",
+      items: [
+        {
+          bookId: "math-5-core",
+          title: "Everyday Mathematics",
+          imageUrl: "/book-covers/mathematics.svg",
+          unitPrice: 359,
+          quantity: 1,
+          lineTotal: 359
+        },
+        {
+          bookId: "english-2",
+          title: "Little Words, Big Stories",
+          imageUrl: "/book-covers/english.svg",
+          unitPrice: 319,
+          quantity: 1,
+          lineTotal: 319
+        }
+      ]
+    },
+    {
+      id: "ORD-84192084",
+      userId: "demo_user",
+      status: "delivered",
+      paymentMethod: "upi_gpay",
+      itemCount: 2,
+      total: 1250,
+      customerName: "Alex Reader",
+      phone: "9876543210",
+      addressLine: "123 Knowledge Avenue",
+      city: "New Delhi",
+      state: "Delhi",
+      postalCode: "110001",
+      createdAt: new Date(Date.now() - 86400000 * 8).toISOString(), // 8 days ago
+      paidAt: new Date(Date.now() - 86400000 * 8).toISOString(),
+      transactionId: "UPI/431109482173",
+      paymentRef: "GPAY-40918231",
+      items: [
+        {
+          bookId: "math-9",
+          title: "Algebra & Geometry",
+          imageUrl: "/book-covers/mathematics.svg",
+          unitPrice: 489,
+          quantity: 1,
+          lineTotal: 489
+        },
+        {
+          bookId: "biology-11",
+          title: "Life Science Illustrated",
+          imageUrl: "/book-covers/science.svg",
+          unitPrice: 559,
+          quantity: 1,
+          lineTotal: 559
+        }
+      ]
+    },
+    {
+      id: "ORD-73910482",
+      userId: "demo_user",
+      status: "delivered",
+      paymentMethod: "card",
+      itemCount: 2,
+      total: 940,
+      customerName: "Alex Reader",
+      phone: "9876543210",
+      addressLine: "123 Knowledge Avenue",
+      city: "New Delhi",
+      state: "Delhi",
+      postalCode: "110001",
+      createdAt: new Date(Date.now() - 86400000 * 25).toISOString(), // 25 days ago
+      paidAt: new Date(Date.now() - 86400000 * 25).toISOString(),
+      transactionId: "CARD/784910284729",
+      paymentRef: "VISA-••4092",
+      items: [
+        {
+          bookId: "science-7",
+          title: "Science Lab: Class 7",
+          imageUrl: "/book-covers/science.svg",
+          unitPrice: 449,
+          quantity: 1,
+          lineTotal: 449
+        },
+        {
+          bookId: "math-9",
+          title: "Algebra & Geometry",
+          imageUrl: "/book-covers/mathematics.svg",
+          unitPrice: 489,
+          quantity: 1,
+          lineTotal: 489
+        }
+      ]
+    }
+  ];
+  return sampleOrders;
 }
 
 export function saveLocalOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'status' | 'userId' | 'items' | 'itemCount' | 'total'>): Order {
   const currentCart = getLocalCart();
   const orderId = `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+  const now = new Date();
   const orderItems: OrderItem[] = currentCart.items.map((item) => ({
     orderId,
     bookId: item.book.id,
@@ -415,6 +496,14 @@ export function saveLocalOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'stat
     lineTotal: item.lineTotal
   }));
 
+  const method = orderData.paymentMethod || 'cash_on_delivery';
+  let txnPrefix = 'UPI';
+  if (method === 'card') txnPrefix = 'CARD';
+  else if (method === 'netbanking') txnPrefix = 'NETB';
+  else if (method === 'cash_on_delivery') txnPrefix = 'COD';
+
+  const transactionId = `${txnPrefix}/${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+
   const newOrder: Order = {
     ...orderData,
     id: orderId,
@@ -422,7 +511,10 @@ export function saveLocalOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'stat
     status: "placed",
     itemCount: currentCart.itemCount,
     total: currentCart.subtotal,
-    createdAt: new Date().toISOString(),
+    createdAt: now.toISOString(),
+    paidAt: method !== 'cash_on_delivery' ? now.toISOString() : undefined,
+    transactionId,
+    paymentRef: `${txnPrefix}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
     items: orderItems
   };
 
